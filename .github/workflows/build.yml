@@ -57,6 +57,7 @@ jobs:
           ./stage/x64/bowtie2/bowtie2-align-s.exe --version
           ./stage/x64/fastp/fastp.exe --version
           ./stage/x64/ncbi-blast/blastn.exe -version
+          ./stage/x64/ncbi-blast/tblastn.exe -version
           ./stage/x64/spades/bin/spades-core.exe || true
 
       - name: Package
@@ -110,6 +111,7 @@ jobs:
           ./stage/arm64/bowtie2/bowtie2-align-s.exe --version
           ./stage/arm64/fastp/fastp.exe --version
           ./stage/arm64/ncbi-blast/blastn.exe -version
+          ./stage/arm64/ncbi-blast/tblastn.exe -version
           ./stage/arm64/spades/bin/spades-core.exe || true
 
       - name: Package

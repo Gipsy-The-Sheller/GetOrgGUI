@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # Fetch the official NCBI BLAST+ Windows x64 binaries and keep only the
-# tools GetOrganelle actually uses (blastn + makeblastdb).
+# tools GetOrganelle and the graph viewer use
+# (blastn + tblastn + makeblastdb).
 #
 # NCBI does not publish a Windows arm64 build.  The x64 binaries run on
 # Windows 11 ARM64 through the built-in x64 emulation, so the same archive
@@ -31,7 +32,7 @@ rm -rf "$EXTRACT" "$PREFIX"
 mkdir -p "$EXTRACT" "$PREFIX"
 tar -xzf "$ARCHIVE" -C "$EXTRACT"
 
-for f in blastn.exe makeblastdb.exe nghttp2.dll; do
+for f in blastn.exe tblastn.exe makeblastdb.exe nghttp2.dll; do
   cp -a "$EXTRACT/$TOPDIR/bin/$f" "$PREFIX/"
 done
 for f in LICENSE README ChangeLog BLAST_PRIVACY; do
