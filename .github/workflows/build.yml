@@ -40,10 +40,11 @@ jobs:
             mingw-w64-x86_64-bzip2
             mingw-w64-x86_64-libdeflate
             mingw-w64-x86_64-isa-l
-            mingw-w64-x86_64-libgnurx
+            # libsystre provides the libgnurx POSIX regex API; the separate
+            # libgnurx package has been retired from the MSYS2 repositories.
             mingw-w64-x86_64-libsystre
             mingw-w64-x86_64-libtre
-            mingw-w64-x86_64-gettext
+            mingw-w64-x86_64-gettext-runtime
             mingw-w64-x86_64-libiconv
             mingw-w64-x86_64-pkgconf
             zip
@@ -94,7 +95,8 @@ jobs:
             mingw-w64-clang-aarch64-bzip2
             mingw-w64-clang-aarch64-libdeflate
             mingw-w64-clang-aarch64-isa-l
-            mingw-w64-clang-aarch64-libgnurx
+            # libsystre provides the libgnurx POSIX regex API; the separate
+            # libgnurx package has been retired from the MSYS2 repositories.
             mingw-w64-clang-aarch64-libsystre
             mingw-w64-clang-aarch64-libtre
             mingw-w64-clang-aarch64-gettext-runtime
