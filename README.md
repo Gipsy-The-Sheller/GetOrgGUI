@@ -133,10 +133,17 @@ GUI 可通过 `gui/settings.json` 作为 YRTools `polypyplug` 插入宿主标签
 
 ## 许可证
 
+- **GetOrganelle Workbench 原创代码**（GUI、CLI、测试、构建脚本、CI、文档）：
+  **AGPL-3.0-only**，见 `LICENSE` 与 `NOTICE.md`
 - GetOrganelle：GPLv3
 - SPAdes：GPLv2
 - Bowtie2：GPLv3
+- fastp：MIT
 - samtools / htslib：MIT / Expat
-- NCBI BLAST+：见其 `LICENSE`
+- NCBI BLAST+：public domain，见其 `LICENSE`
+- PyQt5：GPLv3 或商业许可（GUI 依赖，不随源码仓库分发）
 
-各组件原始许可证文件均保留在对应源码/安装目录中。
+AGPL 仅覆盖本仓库原创代码，不会重新许可 vendored 第三方源码。各组件原始
+许可证文件均保留在对应源码/安装目录中；发行包还包含 `NOTICE.md` 与
+`SOURCE_MANIFEST.md`。对应源码：
+<https://github.com/Gipsy-The-Sheller/GetOrgGUI>。

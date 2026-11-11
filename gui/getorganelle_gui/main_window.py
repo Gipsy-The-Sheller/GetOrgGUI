@@ -610,7 +610,7 @@ class MainWindow(QMainWindow):
             "SPAdes, Bowtie2 and BLAST+ are bundled under GetOrganelleDep.</p>"
             '<p>GetOrganelle: Jin et al. 2020, <i>Genome Biology</i> 21:241. '
             '<a href="https://doi.org/10.1186/s13059-020-02154-5">doi:10.1186/s13059-020-02154-5</a></p>'
-            "<p>GUI license: MIT. Bundled tools keep their original licenses.</p>",
+            "<p>GUI license: AGPL-3.0-only. Bundled tools keep their original licenses.</p>",
         )
 
     def toggle_theme(self) -> None:

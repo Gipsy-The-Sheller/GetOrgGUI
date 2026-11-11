@@ -112,6 +112,17 @@ set PYTHONPATH=%ROOT%gui
 
 ## 许可证
 
-GetOrganelle（GPLv3）、SPAdes（GPLv2）、Bowtie2（GPLv3）、samtools/htslib
-（MIT/Expat）均按其原始许可证分发；各目录内附有对应 LICENSE 文件。
-NCBI BLAST+ 的使用条款见 `ncbi-blast\LICENSE`。
+GetOrganelle Workbench 原创代码（GUI、CLI、构建脚本、CI、文档）采用
+**AGPL-3.0-only**，见包根目录的 `LICENSE` 与 `NOTICE.md`。AGPL 不改变
+vendored 组件的许可证：
+
+- GetOrganelle：GPLv3
+- SPAdes：GPLv2
+- Bowtie2：GPLv3
+- fastp：MIT
+- samtools / htslib：MIT/Expat
+- NCBI BLAST+：public domain（`ncbi-blast\LICENSE`）
+- PyQt5：GPLv3 或商业许可（GUI 依赖，由 `setup_venv.bat` 安装）
+
+各目录内附有对应 LICENSE 文件。包内 `SOURCE_MANIFEST.md` 给出对应源码
+位置；源码仓库：<https://github.com/Gipsy-The-Sheller/GetOrgGUI>。

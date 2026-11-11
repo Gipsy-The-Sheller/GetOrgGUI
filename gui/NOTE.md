@@ -130,3 +130,7 @@ venv\Scripts\python.exe -m getorganelle_gui.cli run --mode reads ^
 - E 值不能单独排除 NUMT/NUPT；请结合多基因证据、覆盖度与 reads 支持。
 - GUI 不是 YR-MPE 的宿主插件本体，但已实现 `ResultSpec`、
   `control_bindings()`、skill 文档与 provenance，可作为插件层接入。
+- 原创代码采用 **AGPL-3.0-only**；vendored 的 GetOrganelle（GPLv3）、
+  SPAdes（GPLv2）、Bowtie2（GPLv3）等保留各自许可证。GUI 通过 PyQt5
+  的 GPLv3 选项使用，详见根目录 `LICENSE`、`NOTICE.md` 与
+  `THIRD_PARTY_NOTICES.md`。

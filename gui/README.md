@@ -242,6 +242,14 @@ test and skips when the bundled BLAST+ tools are absent. `yrtools_smoke.py`
 constructs the YRTools entry, embeds the widget in a host tab, and checks that
 `MainWindow.run()` returns `self` without overriding the host stylesheet.
 
+## License
+
+The Workbench original code (GUI, CLI, tests, build scripts and CI) is
+**AGPL-3.0-only**; see the repository `LICENSE` and `NOTICE.md`. The GUI uses
+PyQt5 under its GPLv3 option (or a commercial PyQt license). Vendored
+GetOrganelle, SPAdes, Bowtie2, fastp and samtools sources keep their own
+licenses; the release package includes the notices and a source manifest.
+
 ## Scaling note
 
 The UI was tuned against raxmlGUI 2.0 on a 2560×1600 / 150 % display: body
