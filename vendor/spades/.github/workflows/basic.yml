@@ -27,7 +27,10 @@ env:
 
 jobs:
   build-linux:
-    runs-on: self-hosted
+    strategy:
+      matrix:
+        os: [ubuntu-26.04, ubuntu-26.04-arm, ubuntu-24.04, ubuntu-24.04-arm, self-hosted]
+    runs-on: ${{ matrix.os }}
     name: '🐧 Build SPAdes for Linux'
 
     steps:
@@ -42,11 +45,16 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: '⚙️ Install dependencies'
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y libbz2-dev openmpi-bin openmpi-doc libopenmpi-dev
+
       - name: '⚙️ Install ccache'
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
-          key: sccache-${{env.BUILD_TYPE}}-linux
+          key: sccache-${{env.BUILD_TYPE}}-${{ matrix.os }}
 
       - name: '⚙️ Configure CMake'
         run: >
@@ -66,7 +74,7 @@ jobs:
       - name: '📦 Package'
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts-linux
+          name: build-artifacts-linux-${{ matrix.os }}
           path: |
             ${{env.BUILD_DIR}}/${{env.PKG_LINUX}}.tar.gz
             ${{env.BUILD_DIR}}/bin/debruijn_test
@@ -75,7 +83,10 @@ jobs:
 
   spades-1k-checks-linux:
     name: '🚬 E. coli 1k smoke checks'
-    runs-on: self-hosted
+    strategy:
+      matrix:
+        os: [ubuntu-26.04, ubuntu-26.04-arm, ubuntu-24.04, ubuntu-24.04-arm, self-hosted]
+    runs-on: ${{ matrix.os }}
     needs: build-linux
 
     steps:
@@ -85,10 +96,16 @@ jobs:
           shopt -s dotglob &&
           rm -rf *
 
+      - name: '⚙️ Install runtime deps'
+        if: matrix.os != 'self-hosted'
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y libbz2-1.0 openmpi-bin libopenmpi-dev
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts-linux
+          name: build-artifacts-linux-${{ matrix.os }}
           path: ${{env.INSTALL_DIR}}
 
       - name: '📦 Unpack package'
@@ -122,7 +139,10 @@ jobs:
 
   spades-unittests-linux:
     name: 'SPAdes unittests'
-    runs-on: self-hosted
+    strategy:
+      matrix:
+        os: [ubuntu-26.04, ubuntu-26.04-arm, ubuntu-24.04, ubuntu-24.04-arm, self-hosted]
+    runs-on: ${{ matrix.os }}
     needs: build-linux
 
     steps:
@@ -137,14 +157,20 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: '⚙️ Install runtime deps'
+        if: matrix.os != 'self-hosted'
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y libbz2-1.0 openmpi-bin libopenmpi-dev
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts-linux
+          name: build-artifacts-linux-${{ matrix.os }}
           path: ${{env.BUILD_DIR}}
 
       - name: '⚙️ Install pytest'
-        run: pip install pytest
+        run: pip install --break-system-packages pytest
 
       - name: '🔎 Include tests'
         working-directory: ${{github.workspace}}
@@ -169,14 +195,25 @@ jobs:
         run: >
           python3 -m pytest src/projects/spades/pipeline/spades_pipeline/tests/test_error_codes.py
 
+      - name: '📦 Unpack package for integration tests'
+        run: |
+          mkdir -p $INSTALL_DIR
+          tar -zxf $BUILD_DIR/$PKG_LINUX.tar.gz -C $INSTALL_DIR
+          echo "SPADES_PKG_DIR=$INSTALL_DIR/$(ls $INSTALL_DIR)" >> $GITHUB_ENV
+
       - name: '🔎 Python integration tests'
         working-directory: ${{github.workspace}}
+        env:
+          SPADES_BUILD_DIR: ${{env.SPADES_PKG_DIR}}
         run: >
           python3 -m pytest src/test/integration/test_error_codes.py
 
   spades-mpi-1k-checks-linux:
     name: '🚬 E. coli 1k smoke checks (MPI)'
-    runs-on: self-hosted
+    strategy:
+      matrix:
+        os: [ubuntu-26.04, ubuntu-26.04-arm, ubuntu-24.04, ubuntu-24.04-arm, self-hosted]
+    runs-on: ${{ matrix.os }}
     needs: build-linux
 
     steps:
@@ -186,10 +223,16 @@ jobs:
           shopt -s dotglob &&
           rm -rf *
 
+      - name: '⚙️ Install runtime deps'
+        if: matrix.os != 'self-hosted'
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y libbz2-1.0 openmpi-bin libopenmpi-dev
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts-linux
+          name: build-artifacts-linux-${{ matrix.os }}
           path: ${{env.INSTALL_DIR}}
 
       - name: '📦 Unpack package'

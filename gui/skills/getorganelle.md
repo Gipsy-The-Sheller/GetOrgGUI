@@ -4,7 +4,7 @@
 
 Assemble organelle genomes (plastomes, mitogenomes, nrDNA) from genome-skimming
 reads, or extract them from an existing GFA/FASTG assembly graph. The plugin
-wraps the native Windows GetOrganelle 1.8.0.1 toolchain (SPAdes 4.3.0-dev,
+wraps the native Windows GetOrganelle 1.8.0.1 toolchain (SPAdes 4.3.0,
 Bowtie2 2.5.5, BLAST+ 2.17.0).
 
 It does **not** annotate genes, build phylogenetic trees, or choose a

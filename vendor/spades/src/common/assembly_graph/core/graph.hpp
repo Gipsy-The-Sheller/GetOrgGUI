@@ -9,6 +9,7 @@
 #pragma once
 
 #include "adt/iterator_range.hpp"
+#include "id_storage.hpp"
 #include "observable_graph.hpp"
 #include "coverage.hpp"
 #include "debruijn_data.hpp"
@@ -25,7 +26,7 @@ public:
     typedef base::EdgeId EdgeId;
     typedef base::VertexId VertexId;
     typedef base::VertexIt VertexIt;
-    typedef DataMasterT::LinkId LinkId;
+    typedef omnigraph::impl::LinkId LinkId;
     typedef VertexIt VertexIterator;
     typedef VertexIterator iterator; // for for_each
     typedef const VertexIterator const_iterator; // for for_each
@@ -44,14 +45,15 @@ private:
 
         std::pair<EdgeId, EdgeId> link;
         unsigned overlap;
+        LinkId conjugate_;
     };
 
-    typedef std::vector<Link> LinkStorage;
-    LinkStorage link_storage_;
+    static constexpr unsigned LINK_ID_BIAS = 3;
+    omnigraph::IdStorage<Link> lstorage_;
 
 public:
     DeBruijnGraph(unsigned k)
-            : base(k), coverage_index_(*this), link_storage_{} {}
+            : base(k), coverage_index_(*this), lstorage_(LINK_ID_BIAS) {}
 
     CoverageIndex<DeBruijnGraph>& coverage_index() {
         return coverage_index_;
@@ -76,9 +78,22 @@ public:
         data(v).set_overlap(ovl);
     }
 
+    using base::conjugate;
+
     LinkId add_link(EdgeId e1, EdgeId e2, unsigned ovl) {
-        link_storage_.emplace_back(e1, e2, ovl);
-        return link_storage_.size() - 1;
+        LinkId fwd = lstorage_.create(e1, e2, ovl);
+        if (e1 == this->conjugate(e2)) {
+            lstorage_.at(fwd.int_id()).conjugate_ = fwd;
+            return fwd;
+        }
+        LinkId conj = lstorage_.create(this->conjugate(e2), this->conjugate(e1), ovl);
+        lstorage_.at(fwd.int_id()).conjugate_ = conj;
+        lstorage_.at(conj.int_id()).conjugate_ = fwd;
+        return fwd;
+    }
+
+    LinkId conjugate(LinkId id) const {
+        return lstorage_.at(id.int_id()).conjugate_;
     }
 
     void add_link(VertexId v, LinkId idx) {
@@ -102,7 +117,7 @@ public:
         links.erase(std::remove_if(links.begin(),
                                    links.end(),
                                    [this, &e](const LinkId &link_id) {
-                                     return link_storage_[link_id].link.first == e;
+                                     return lstorage_.at(link_id.int_id()).link.first == e;
                                    }), links.end());
     }
 
@@ -111,16 +126,38 @@ public:
         links.erase(std::remove_if(links.begin(),
                                    links.end(),
                                    [this, &e](const LinkId &link_id) {
-                                       return link_storage_[link_id].link.second == e;
+                                       return lstorage_.at(link_id.int_id()).link.second == e;
                                    }), links.end());
+    }
+
+    void replace_outedge_in_links(VertexId v, EdgeId old_edge, EdgeId new_edge) {
+        for (const LinkId &link_id : data(v).links()) {
+            auto &lnk = lstorage_.at(link_id.int_id());
+            if (lnk.link.second == old_edge) {
+                lnk.link.second = new_edge;
+                auto &conj_lnk = lstorage_.at(lnk.conjugate_.int_id());
+                conj_lnk.link.first = this->conjugate(new_edge);
+            }
+        }
+    }
+
+    void replace_inedge_in_links(VertexId v, EdgeId old_edge, EdgeId new_edge) {
+        for (const LinkId &link_id : data(v).links()) {
+            auto &lnk = lstorage_.at(link_id.int_id());
+            if (lnk.link.first == old_edge) {
+                lnk.link.first = new_edge;
+                auto &conj_lnk = lstorage_.at(lnk.conjugate_.int_id());
+                conj_lnk.link.second = this->conjugate(new_edge);
+            }
+        }
     }
 
     auto links(VertexId v) const {
         return data(v).links();
     }
 
-    const auto& link(size_t idx) const {
-        return link_storage_[idx];
+    const auto& link(LinkId idx) const {
+        return lstorage_.at(idx.int_id());
     }
 
     bool is_complex(VertexId v) const {
@@ -141,16 +178,37 @@ public:
         VERIFY_MSG(false, "Link " << in.int_id() << " -> " << out.int_id() << " was not found for vertex " << v.int_id());
     }
 
-    void lreserve(size_t size) { link_storage_.reserve(size); }
+    void lreserve(size_t size) { lstorage_.reserve(size); }
 
-    auto link_begin() { return link_storage_.begin(); }
-    auto link_end() { return link_storage_.end(); }
-    auto link_begin() const { return link_storage_.begin(); }
-    auto link_end() const { return link_storage_.end(); }
-    auto links() { return adt::make_range(link_begin(), link_end()); }
-    auto links() const { return adt::make_range(link_begin(), link_end()); }
+    size_t link_size() const { return lstorage_.size(); }
 
-    size_t link_size() const {return link_storage_.size(); }
+    VertexData ConjugateData(const VertexData &data) const {
+        return master().conjugate(data, [this](LinkId lid) { return conjugate(lid); });
+    }
+
+    EdgeId MergePath(const std::vector<EdgeId> &path,
+                     bool safe_merging = true,
+                     std::vector<uint32_t> overlaps = std::vector<uint32_t>()) {
+        EdgeId first_edge = path.front();
+        EdgeId last_edge = path.back();
+        VertexId orig_start = this->EdgeStart(first_edge);
+        VertexId orig_end = this->EdgeEnd(last_edge);
+
+        EdgeId result = base::MergePath(path, safe_merging, std::move(overlaps));
+
+        // CorrectMergePath may conjugate-reverse the path; detect via start vertex.
+        VertexId v_start = this->EdgeStart(result);
+        EdgeId replaced_out = (v_start == orig_start) ? first_edge : this->conjugate(last_edge);
+        if (is_complex(v_start))
+            replace_outedge_in_links(v_start, replaced_out, result);
+
+        VertexId v_end = this->EdgeEnd(result);
+        EdgeId replaced_in = (v_end == orig_end) ? last_edge : this->conjugate(first_edge);
+        if (is_complex(v_end))
+            replace_inedge_in_links(v_end, replaced_in, result);
+
+        return result;
+    }
 
     using base::AddVertex;
     using base::AddEdge;

@@ -32,6 +32,8 @@ namespace barcode_index {
         BarcodeIndexInfoExtractor(const BarcodeIndexT &index, const Graph &g) :
                 index_(index), g_(g) {}
 
+        virtual ~BarcodeIndexInfoExtractor() = default;
+
         /**
          *
          * @param edge
@@ -93,7 +95,7 @@ namespace barcode_index {
                 }
             }
             DEBUG("tails: " + std::to_string(barcodes_overall));
-            DEBUG("Long edges" + long_edges);
+            DEBUG("Long edges" + std::to_string(long_edges));
             return static_cast <double> (barcodes_overall) / static_cast <double> (long_edges);
         }
 
@@ -235,7 +237,7 @@ namespace barcode_index {
             }
 
             bool operator!= (const const_intersection_iterator& other) {
-                return *this != other;
+                return !(*this == other);
             }
 
         private:

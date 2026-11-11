@@ -8,7 +8,7 @@ MSYS2 / Cygwin，也不需要 `msys-2.0.dll`。
 ```
 GetOrganelle\                     GetOrganelle 1.8.0.1（含 Windows 补丁）
 GetOrganelleDep\Windows\
-  SPAdes\                         SPAdes 4.3.0-dev（原生构建）
+  SPAdes\                         SPAdes 4.3.0（原生构建）
   bowtie2\                        Bowtie2 2.5.5（原生构建）
   fastp\                          fastp 1.0.1（可选预处理，原生静态构建）
   ncbi-blast\                     NCBI BLAST+ 2.17.0（blastn / tblastn / makeblastdb）

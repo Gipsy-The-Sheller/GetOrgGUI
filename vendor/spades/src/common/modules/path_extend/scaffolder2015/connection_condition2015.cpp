@@ -21,6 +21,9 @@ Connections ConnectionCondition::ConnectedWith(debruijn_graph::EdgeId e,
     }
     return res;
 }
+bool ConnectionCondition::IsLast() const {
+    return false;
+}
 
 PairedLibConnectionCondition::PairedLibConnectionCondition(const debruijn_graph::Graph &graph,
                                                            std::shared_ptr<PairedInfoLibrary> lib,
@@ -115,7 +118,7 @@ Connections LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeI
     DEBUG("Before prefiltering " << res.size());
     auto iter = res.begin();
     while (iter != res.end()) {
-        if (iter->second < min_read_count_) {
+        if (static_cast<size_t>(iter->second) < min_read_count_) {
             iter = res.erase(iter);
         } else {
             iter++;
@@ -275,6 +278,9 @@ size_t AssemblyGraphConnectionCondition::GetLibIndex() const {
 
 int AssemblyGraphConnectionCondition::GetMedianGap (debruijn_graph::EdgeId, debruijn_graph::EdgeId) const {
     return 0;
+}
+bool AssemblyGraphConnectionCondition::IsLast() const {
+    return true;
 }
 
 }

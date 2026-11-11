@@ -8,7 +8,7 @@ generated release packages.
 | Component | Version | License | Location |
 | --- | --- | --- | --- |
 | GetOrganelle | 1.8.0.1 | GPLv3 | `GetOrganelle/LICENSE` |
-| SPAdes | 4.3.0-dev | GPLv2 | `vendor/spades/GPLv2.txt`, `vendor/spades/LICENSE` |
+| SPAdes | 4.3.0 | GPLv2 | `vendor/spades/GPLv2.txt`, `vendor/spades/LICENSE` |
 | Bowtie2 | 2.5.5 | GPLv3 | `vendor/bowtie2/LICENSE` |
 | fastp | 1.0.1 | MIT | `vendor/fastp/LICENSE` |
 | samtools / htslib | 1.25 | MIT / Expat | `vendor/samtools/LICENSE`, `vendor/samtools/htslib-1.25/LICENSE` |

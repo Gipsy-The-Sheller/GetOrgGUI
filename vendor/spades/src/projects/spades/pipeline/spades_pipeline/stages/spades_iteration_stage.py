@@ -70,6 +70,7 @@ def prepare_config_spades(filename, cfg, additional_contigs_fname, K, stage, sav
     subst_dict["gap_closer_enable"] = bool_to_str(last_one or K >= options_storage.GAP_CLOSER_ENABLE_MIN_K)
     subst_dict["rr_enable"] = bool_to_str(last_one and cfg.rr_enable)
     subst_dict["gfa11"] = bool_to_str(cfg.gfa11)
+    subst_dict["frugal"] = bool_to_str(cfg.frugal)
 #    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
@@ -182,5 +183,5 @@ class IterationStage(stage.Stage):
             args=args,
             config_dir=os.path.relpath(data_dir, options_storage.args.output_dir),
             short_name=self.short_name,
-            mpi_support=True)]
+            mpi_support=not cfg.__dict__["mpi_engine"] == "local")]
         return command

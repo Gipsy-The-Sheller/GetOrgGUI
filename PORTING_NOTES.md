@@ -8,7 +8,7 @@
 E:\Codes\getorg_win\
 ├─ GetOrganelle\                  GetOrganelle 1.8.0.1（含 Windows 补丁）
 │  └─ GetOrganelleDep\Windows\    GetOrganelle 自动查找依赖的位置
-│     ├─ SPAdes\                  SPAdes 4.3.0-dev，原生 MinGW-w64 构建
+│     ├─ SPAdes\                  SPAdes 4.3.0，原生 MinGW-w64 构建
 │     ├─ bowtie2\                 Bowtie2 2.5.5，原生 MinGW-w64 构建
 │     ├─ ncbi-blast\              NCBI BLAST+ 2.17.0 官方 Windows 版
 │     └─ samtools\bin\            samtools 1.25（静态链接；GetOrganelle 流程本身不用）
@@ -26,7 +26,7 @@ GetOrganelle 在运行时按 `GetOrganelleLib/../GetOrganelleDep/Windows` 查找
 | 组件 | 版本 | 来源 |
 | --- | --- | --- |
 | GetOrganelle | 1.8.0.1 | GitHub Kinggerm/GetOrganelle（含本目录补丁） |
-| SPAdes | 4.3.0-dev | 源码 `E:\Codes\spades`，MinGW-w64 原生构建 |
+| SPAdes | 4.3.0 | 源码 `vendor/spades`（v4.3.0 release + Windows 补丁），MinGW-w64 原生构建 |
 | Bowtie2 | 2.5.5 | 源码构建，静态链接 |
 | samtools / htslib | 1.25 | 源码构建，静态链接 |
 | BLAST+ | 2.17.0 | NCBI 官方 `x64-win64` 构建 |
@@ -75,11 +75,12 @@ Python 层（SPAdes 流水线）：
 - 配置模板中的 `load_from`、`sewage_matrix`、`series_analysis` 路径统一转成正斜杠
   （Boost property_tree 会把反斜杠当转义符）
 
-构建/安装目录：`E:\Codes\getorg_win\build\spades-native` → `E:\Codes\getorg_win\deps\SPAdes` → 拷贝到
-`E:\Codes\getorg_win\GetOrganelle\GetOrganelleDep\Windows\SPAdes`。
+构建/安装目录：`build/ci-x64/spades` → `stage/x64/spades` → `deps/SPAdes` → 拷贝到
+`GetOrganelle/GetOrganelleDep/Windows/SPAdes`。
 
-> 原来的 `E:\Codes\spades\build_spades` 是 MSYS2 工具链的旧构建，未删除；新的原生构建在
-> `E:\Codes\getorg_win\build\spades-native`，二者互不影响。源码补丁都在 `E:\Codes\spades` 工作树中。
+> `vendor/spades` 是 SPAdes v4.3.0 release 源码快照（含本目录的 Windows 补丁）；构建脚本
+> 使用 MSYS2 MINGW64 工具链。v4.3.0 新增 BZip2 构建依赖，CI 需要安装
+> `mingw-w64-x86_64-bzip2`（arm64 对应 `mingw-w64-clang-aarch64-bzip2`）。
 
 ## Bowtie2 包装器改动
 

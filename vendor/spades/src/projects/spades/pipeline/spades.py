@@ -259,8 +259,6 @@ def get_options_from_params(params_filename, running_script):
 def parse_args(args):
     options, cfg, dataset_data = options_parser.parse_args(bin_home, spades_home,
                                                            secondary_filling=False, restart_from=False)
-    print(options_storage.args.rna)
-
     command_line = ""
 
     if options_storage.args.continue_mode:
@@ -713,7 +711,7 @@ def main(args):
         if exc_type == SystemExit:
             # If SystemExit carries a numeric code, propagate it; otherwise map to a general error
             try:
-                code = int(exc_value)
+                code = int(str(exc_value))
                 sys.exit(code)
             except Exception:
                 support.error(str(exc_value), exit_code=support.ErrorCode.GeneralError)

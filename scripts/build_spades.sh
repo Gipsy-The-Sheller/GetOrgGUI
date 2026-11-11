@@ -7,9 +7,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 require_tool cmake ninja
 
-SRC="$ROOT/vendor/spades/src"
-BUILD="$BUILD_ROOT/spades"
-PREFIX="$STAGE/spades"
+SRC="${SPADES_SRC:-$ROOT/vendor/spades/src}"
+BUILD="${SPADES_BUILD_DIR:-$BUILD_ROOT/spades}"
+PREFIX="${SPADES_PREFIX:-$STAGE/spades}"
 
 log "Building SPAdes ($TARGET_ARCH) with $CXX"
 rm -rf "$BUILD" "$PREFIX"

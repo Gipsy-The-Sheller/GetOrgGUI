@@ -12,7 +12,7 @@ Windows x86_64 与 Windows arm64 两个版本。
 | 组件 | 版本 | 构建方式 |
 | --- | --- | --- |
 | GetOrganelle | 1.8.0.1 | 纯 Python（含 Windows 补丁） |
-| SPAdes | 4.3.0-dev | MinGW-w64 原生构建 |
+| SPAdes | 4.3.0 | MinGW-w64 原生构建 |
 | Bowtie2 | 2.5.5 | MinGW-w64 原生构建，静态运行时 |
 | fastp | 1.0.1 | MinGW-w64 原生构建，静态链接（可选预处理） |
 | samtools / htslib | 1.25 | MinGW-w64 原生构建，静态链接 |

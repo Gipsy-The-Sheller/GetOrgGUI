@@ -353,7 +353,7 @@ def add_basic_args(pgroup_basic):
                               help="runs metaplasmidSPAdes pipeline for plasmid detection in metagenomic datasets "
                                    "(equivalent for --meta --plasmid)"
                               if not help_hidden else argparse.SUPPRESS,
-                              action="store_true")                              
+                              action="store_true")
     pgroup_basic.add_argument("--rnaviral",
                               dest="rnaviral",
                               help="this flag enables virus assembly module from RNA-Seq data"
@@ -694,6 +694,18 @@ def add_advanced_args(pgroup_advanced):
                        help=argparse.SUPPRESS,
                        action="store_false")
 
+    frugal = pgroup_advanced.add_mutually_exclusive_group()
+    frugal.add_argument("--frugal",
+                       dest="frugal",
+                       default=None,
+                       help="be memory frugal (at the expense of the possible assembly quality)",
+                       action="store_true")
+    frugal.add_argument("--frugal:false",
+                        dest="frugal",
+                        default=None,
+                        help=argparse.SUPPRESS,
+                        action="store_false")
+
 
 def add_hidden_args(pgroup_hidden):
     show_help_hidden = ("--help-hidden" in sys.argv)
@@ -1024,6 +1036,7 @@ def add_to_cfg(cfg, bin_home, spades_home, args):
     cfg["common"].__dict__["developer_mode"] = args.developer_mode
     cfg["common"].__dict__["sewage"] = args.sewage
     cfg["common"].__dict__["sewage_matrix"] = os.path.join(spades_home, "sewage/usher_barcodes.csv")
+    cfg["common"].__dict__["mpi_engine"] = args.grid_engine
 
     cfg["common"].__dict__["time_tracer"] = args.time_tracer
     if args.series_analysis:
@@ -1091,6 +1104,8 @@ def add_to_cfg(cfg, bin_home, spades_home, args):
         if args.read_buffer_size:
             cfg["assembly"].__dict__["read_buffer_size"] = args.read_buffer_size
         cfg["assembly"].__dict__["gfa11"] = args.gfa11
+        # Default value depends on grid engine : local / non-local
+        cfg["assembly"].__dict__["frugal"] = args.frugal if args.frugal else args.grid_engine != "local"
 
     # corrector can work only if contigs exist (not only error correction)
     if (not args.only_error_correction) and args.mismatch_corrector:
@@ -1222,7 +1237,7 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
             file_operations.get_lib_ids_by_type(dataset_data, "assembly-graph")))
         long_read_libs = max(1, len(
             file_operations.get_lib_ids_by_type(dataset_data, ["pacbio", "nanopore"])))
-        
+
         if len(dataset_data) > paired_end_libs + graph_libs + long_read_libs:
             support.error("you cannot specify any data types except a single paired-end library "
                           "(optionally accompanied by a single library of "
@@ -1306,7 +1321,7 @@ def set_default_values():
     if options_storage.args.developer_mode is None:
         options_storage.args.developer_mode = False
     if options_storage.args.time_tracer is None:
-        options_storage.args.time_tracer = False        
+        options_storage.args.time_tracer = False
     if options_storage.args.qvoffset == "auto":
         options_storage.args.qvoffset = None
     if options_storage.args.cov_cutoff is None:

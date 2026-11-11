@@ -57,7 +57,7 @@ PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueE
 }
 
 std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage &edge_storage) const {
-    using namespace scaffold_graph;
+    using namespace scaffolder;
 
     const pe_config::ParamSetT::ScaffoldGraphParamsT &params = params_.pset.scaffold_graph_params;
 
@@ -88,14 +88,18 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
                                             const std::set<EdgeId> &main_edge_set,
                                             const debruijn_graph::GenomeConsistenceChecker &genome_checker,
                                             const std::filesystem::path &filename) const {
-    using namespace scaffold_graph;
-
-    auto vertex_colorer = std::make_shared<ScaffoldVertexSetColorer>(main_edge_set);
+    using namespace scaffolder;
+    std::set<scaffold_graph::ScaffoldVertex> scaff_vertex_set(main_edge_set.begin(), main_edge_set.end());
+    auto vertex_colorer = std::make_shared<ScaffoldVertexSetColorer>(scaff_vertex_set);
     auto edge_colorer = std::make_shared<ScaffoldEdgeColorer>();
-    graph_colorer::CompositeGraphColorer<ScaffoldGraph> colorer(vertex_colorer, edge_colorer);
+    graph_colorer::CompositeGraphColorer<scaffold_graph::ScaffoldGraph> colorer(vertex_colorer, edge_colorer);
 
     INFO("Visualizing scaffold graph");
-    ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, genome_checker.EdgeLabels());
+    std::map<scaffold_graph::ScaffoldVertex, std::string> scaff_vertex_labels;
+    for (const auto& entry: genome_checker.EdgeLabels()) {
+        scaff_vertex_labels.insert({entry.first, entry.second});
+    }
+    ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, scaff_vertex_labels);
     std::ofstream single_dot;
     single_dot.open(filename.string() + "_single.dot");
     singleVisualizer.Visualize(single_dot, colorer);

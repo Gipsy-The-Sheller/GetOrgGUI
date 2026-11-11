@@ -14,6 +14,8 @@
 #include "alignment/sequence_mapper_notifier.hpp"
 #include "alignment/sequence_mapper.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <random>
 #include <string>
 #include <unordered_set>
@@ -35,14 +37,14 @@ class ConcurrentBufferFiller {
       public:
         explicit BarcodeEncoder(size_t start):
             barcodes_map_(),
-            start_(start)
+            next_id_(start)
         { }
 
         BarcodeId find_or_insert(const std::string &barcode_string) {
             BarcodeId result;
             barcodes_map_.upsert(barcode_string, [&result, this](BarcodeId &value, libcuckoo::UpsertContext context) {
               if (context != libcuckoo::UpsertContext::ALREADY_EXISTED) {
-                  value = barcodes_map_.size() + start_;
+                  value = next_id_.fetch_add(1);
               }
               result = value;
               return false;
@@ -60,11 +62,11 @@ class ConcurrentBufferFiller {
             return barcodes_map_.find(barcode);
         }
         size_t size() const {
-            return barcodes_map_.size();
+            return next_id_.load();
         }
       private:
         BarcodeMap barcodes_map_;
-        const size_t start_;
+        std::atomic<size_t> next_id_;
     };
 
     ConcurrentBufferFiller(const Graph &g,
@@ -199,31 +201,29 @@ class FrameBarcodeIndexBuilder {
     template<class ReadType>
     void ConstructBarcodeIndex(io::ReadStreamList<ReadType> read_streams,
                                FrameBarcodeIndex<Graph> &barcode_index,
-                               const io::SequencingLibraryBase &lib,
                                bool is_tellseq);
 
-    void DownsampleBarcodeIndex(FrameBarcodeIndex<Graph> &downsampled_index, FrameBarcodeIndex<Graph> &original_index, double sampling_factor) {
+    void DownsampleBarcodeIndex(FrameBarcodeIndex<Graph> &downsampled_index, 
+                                FrameBarcodeIndex<Graph> &original_index, 
+                                double sampling_factor,
+                                int seed) {
         std::unordered_set<BarcodeId> barcodes;
-        std::unordered_set<BarcodeId> passed_barcodes;
-        BarcodeId min_barcode = std::numeric_limits<BarcodeId>::max();
-        BarcodeId max_barcode = std::numeric_limits<BarcodeId>::min();
         for (auto it = original_index.begin(); it != original_index.end(); ++it) {
             const auto &barcode_distribution = it->second.GetDistribution();
             for (const auto &entry: barcode_distribution) {
-                BarcodeId current_barcode = entry.first;
-                barcodes.insert(current_barcode);
-                min_barcode = std::min(min_barcode, current_barcode);
-                max_barcode = std::max(max_barcode, current_barcode);
+                barcodes.insert(entry.first);
             }
         }
         INFO("Number of encountered barcodes: " << barcodes.size());
-        INFO("Barcode id range: " << min_barcode << ", " << max_barcode);
-        double barcode_thr = static_cast<double>(max_barcode - min_barcode) * sampling_factor;
-        for (const auto &barcode: barcodes) {
-            if (math::le(barcode - min_barcode, barcode_thr)) {
-                passed_barcodes.insert(barcode);
-            }
-        }
+        size_t target = static_cast<size_t>(std::round(static_cast<double>(barcodes.size()) * sampling_factor));
+        std::unordered_set<BarcodeId> passed_barcodes;
+        passed_barcodes.reserve(target);
+        std::mt19937 rng(seed);
+        std::sample(barcodes.begin(), 
+                    barcodes.end(), 
+                    std::inserter(passed_barcodes, passed_barcodes.end()), 
+                    target, 
+                    rng);
         INFO("Passed barcodes: " << passed_barcodes.size());
 
         downsampled_index.InitialFillMap();
@@ -248,7 +248,6 @@ class FrameBarcodeIndexBuilder {
 template<class ReadType>
 void FrameBarcodeIndexBuilder::ConstructBarcodeIndex(io::ReadStreamList<ReadType> read_streams,
                                                      FrameBarcodeIndex<Graph> &barcode_index,
-                                                     const io::SequencingLibraryBase &lib,
                                                      bool is_tellseq) {
     {
         size_t starting_barcode = 0;
