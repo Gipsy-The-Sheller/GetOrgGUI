@@ -35,6 +35,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from .blast_dialog import BlastReferenceDialog
 from .graph_model import (
     AssemblyGraph,
     GraphNode,
@@ -42,8 +43,12 @@ from .graph_model import (
     layout_graph_with_ends,
     load_graph,
 )
+from .reference_blast import NodeHitView
+from .settings import Settings
 from .theme import LIGHT, Tokens
 from .widgets import human_bp
+
+BLAST_HIT_COLOR = QColor("#D946EF")
 
 COLOR_MODES = {
     "Coverage": "coverage",
@@ -101,6 +106,8 @@ class GraphCanvas(QWidget):
         self._moved = False
         self._value_range = (0.0, 1.0)
         self._graph_center = (0.5, 0.5)
+        self.blast_hits: Dict[str, NodeHitView] = {}
+        self.blast_summary = ""
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.StrongFocus)
         self.setMinimumSize(360, 260)
@@ -119,6 +126,9 @@ class GraphCanvas(QWidget):
         ends,
         note: str = "",
     ) -> None:
+        if graph is not self.graph:
+            self.blast_hits = {}
+            self.blast_summary = ""
         self.graph = graph
         self.positions = dict(centers)
         self.ends = dict(ends)
@@ -151,8 +161,24 @@ class GraphCanvas(QWidget):
         self.selected_id = None
         self.hovered_id = None
         self._graph_center = (0.5, 0.5)
+        self.blast_hits = {}
+        self.blast_summary = ""
         self.update()
         self.status.emit("")
+
+    def set_blast_hits(
+        self, hits: Dict[str, NodeHitView], summary: str = ""
+    ) -> None:
+        self.blast_hits = dict(hits)
+        self.blast_summary = summary
+        self.update()
+        self._emit_status()
+
+    def clear_blast(self) -> None:
+        self.blast_hits = {}
+        self.blast_summary = ""
+        self.update()
+        self._emit_status()
 
     def _compute_range(self) -> Tuple[float, float]:
         if self.graph is None:
@@ -304,6 +330,7 @@ class GraphCanvas(QWidget):
         self._draw_edges(painter)
         self._draw_nodes(painter)
         self._draw_legend(painter)
+        self._draw_blast_badge(painter)
         painter.end()
 
     def _draw_edges(self, painter: QPainter) -> None:
@@ -319,7 +346,11 @@ class GraphCanvas(QWidget):
             color = QColor(self.tokens.outline_strong)
             if highlighted:
                 color = QColor(self.tokens.primary)
-            color.setAlpha(180 if highlighted else 120)
+            if self.blast_hits:
+                edge_hit = edge.source in self.blast_hits or edge.target in self.blast_hits
+                color.setAlpha(190 if (highlighted or edge_hit) else 35)
+            else:
+                color.setAlpha(180 if highlighted else 120)
             pen = QPen(color, 1.9 if highlighted else 1.25)
             pen.setCapStyle(Qt.RoundCap)
             painter.setPen(pen)
@@ -366,6 +397,21 @@ class GraphCanvas(QWidget):
             color = self._color_for(node)
             selected = node_id == self.selected_id
             hovered = node_id == self.hovered_id
+            matched = bool(self.blast_hits) and node_id in self.blast_hits
+            if self.blast_hits:
+                painter.save()
+                if not matched:
+                    painter.setOpacity(0.30)
+
+            if matched:
+                blast_glow_color = QColor(BLAST_HIT_COLOR)
+                blast_glow_color.setAlpha(85)
+                blast_glow = QPen(blast_glow_color, thickness + 8.0)
+                blast_glow.setCapStyle(Qt.RoundCap)
+                blast_glow.setJoinStyle(Qt.RoundJoin)
+                painter.setPen(blast_glow)
+                painter.setBrush(Qt.NoBrush)
+                painter.drawPath(path)
 
             # Soft drop shadow, then a wide glow for the selected node.
             painter.save()
@@ -387,8 +433,15 @@ class GraphCanvas(QWidget):
                 painter.setBrush(Qt.NoBrush)
                 painter.drawPath(path)
 
-            border = QColor(self.tokens.primary if (selected or hovered) else self.tokens.outline_strong)
-            border.setAlpha(230 if (selected or hovered) else 180)
+            if matched:
+                border = QColor(BLAST_HIT_COLOR)
+            else:
+                border = QColor(
+                    self.tokens.primary
+                    if (selected or hovered)
+                    else self.tokens.outline_strong
+                )
+            border.setAlpha(230 if (selected or hovered or matched) else 180)
             outline = QPen(border, thickness + 2.6)
             outline.setCapStyle(Qt.RoundCap)
             outline.setJoinStyle(Qt.RoundJoin)
@@ -426,7 +479,15 @@ class GraphCanvas(QWidget):
                 painter.drawPath(path)
                 painter.restore()
 
-            if self.label_mode != "none":
+            if matched:
+                midpoint = points[len(points) // 2]
+                painter.setPen(QPen(QColor(self.tokens.surface_alt), 1.0))
+                painter.setBrush(QBrush(BLAST_HIT_COLOR))
+                painter.drawEllipse(midpoint, 3.4, 3.4)
+
+            if self.blast_hits:
+                painter.restore()
+            if self.label_mode != "none" and (not self.blast_hits or matched):
                 label_requests.append((node, points, thickness))
         self._draw_labels(painter, label_requests)
 
@@ -463,6 +524,37 @@ class GraphCanvas(QWidget):
         painter.setPen(QColor(self.tokens.text_secondary))
         painter.setFont(font)
         painter.drawText(QRectF(left + 8, top + 2, width - 16, 14), Qt.AlignLeft | Qt.AlignVCenter, title)
+
+    def _draw_blast_badge(self, painter: QPainter) -> None:
+        if not self.blast_hits or not self.blast_summary:
+            return
+        font = QFont(self.font())
+        font.setPointSizeF(7.5)
+        painter.setFont(font)
+        metrics = QFontMetricsF(font)
+        width = min(
+            max(150.0, metrics.horizontalAdvance(self.blast_summary) + 34),
+            max(150.0, self.width() - 20),
+        )
+        height = 24
+        box = QRectF(10, 10, width, height)
+        surface = QColor(self.tokens.surface_alt)
+        surface.setAlpha(235)
+        painter.setPen(QPen(QColor(BLAST_HIT_COLOR), 1.2))
+        painter.setBrush(QBrush(surface))
+        painter.drawRoundedRect(box, 5, 5)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QBrush(BLAST_HIT_COLOR))
+        painter.drawEllipse(QPointF(box.left() + 10, box.center().y()), 4, 4)
+        text = metrics.elidedText(
+            self.blast_summary, Qt.ElideRight, int(width - 26)
+        )
+        painter.setPen(QColor(self.tokens.text))
+        painter.drawText(
+            QRectF(box.left() + 19, box.top(), box.width() - 25, box.height()),
+            Qt.AlignLeft | Qt.AlignVCenter,
+            text,
+        )
 
     def _draw_labels(
         self,
@@ -703,19 +795,30 @@ class GraphCanvas(QWidget):
                 f" · selected {node.id}: {human_bp(node.length)}, "
                 f"coverage {node.coverage:.1f}×"
             )
+        blast = ""
+        if self.blast_hits:
+            blast = f" · BLAST {len(self.blast_hits)} node(s)"
         self.status.emit(
             f"{stats['nodes']} nodes · {stats['edges']} edges · "
             f"{human_bp(stats['total_bp'])} · {stats['components']} component(s)"
             + selected
+            + blast
         )
 
 
 class GraphViewer(QWidget):
     """Toolbar + canvas + status line."""
 
-    def __init__(self, tokens: Tokens = LIGHT, parent=None):
+    def __init__(
+        self,
+        tokens: Tokens = LIGHT,
+        parent=None,
+        settings: Optional[Settings] = None,
+    ):
         super().__init__(parent)
         self.tokens = tokens
+        self.settings = settings
+        self._blast_dialog: Optional[BlastReferenceDialog] = None
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
@@ -736,6 +839,11 @@ class GraphViewer(QWidget):
         self.search_edit.setPlaceholderText("Find node…")
         self.search_edit.setMaximumWidth(160)
         self.export_button = QPushButton("Export PNG")
+        self.blast_button = QPushButton("BLAST ref…")
+        self.blast_button.setToolTip(
+            "Search a GenBank reference against graph nodes and highlight "
+            "candidate organelle contigs"
+        )
         self.color_combo.setMaximumWidth(112)
         self.label_combo.setMaximumWidth(104)
         self.search_edit.setMaximumWidth(150)
@@ -743,6 +851,7 @@ class GraphViewer(QWidget):
         toolbar.addWidget(self.fit_button, 0, 0)
         toolbar.addWidget(self.relayout_button, 0, 1)
         toolbar.addWidget(self.export_button, 0, 2)
+        toolbar.addWidget(self.blast_button, 0, 3)
         toolbar.addWidget(QLabel("Colour"), 1, 0)
         toolbar.addWidget(self.color_combo, 1, 1)
         toolbar.addWidget(QLabel("Label"), 1, 2)
@@ -766,6 +875,7 @@ class GraphViewer(QWidget):
         self.label_combo.currentIndexChanged.connect(self._label_changed)
         self.search_edit.returnPressed.connect(self._search)
         self.export_button.clicked.connect(self.export_png)
+        self.blast_button.clicked.connect(self._open_blast_dialog)
         self.canvas.status.connect(self.status_label.setText)
 
     def set_tokens(self, tokens: Tokens) -> None:
@@ -781,6 +891,8 @@ class GraphViewer(QWidget):
         cached = self._cache.get(cache_key) if cache_key else None
         if cached is not None:
             graph, centers, ends, note = cached
+            if graph is not self._graph:
+                self._close_blast_dialog()
             self._graph = graph
             self.canvas.set_graph(graph, centers, ends, note)
             self.status_label.setText(note)
@@ -796,6 +908,8 @@ class GraphViewer(QWidget):
             message = "No segments found in this graph file."
             self.status_label.setText(message)
             return False, message
+        if graph is not self._graph:
+            self._close_blast_dialog()
         self._graph = graph
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
@@ -810,15 +924,45 @@ class GraphViewer(QWidget):
         return True, note
 
     def set_graph(self, graph: AssemblyGraph, note: str = "", seed: int = 7) -> None:
+        self._close_blast_dialog()
         self._graph = graph
         centers, ends, layout_note = layout_graph_with_ends(graph, seed=seed)
         self.canvas.set_graph(graph, centers, ends, layout_note)
         self.status_label.setText((note + " · " if note else "") + layout_note)
 
     def clear(self) -> None:
+        self._close_blast_dialog()
         self._graph = None
         self.canvas.clear()
         self.status_label.clear()
+
+    def _open_blast_dialog(self) -> None:
+        if self._graph is None:
+            return
+        if self._blast_dialog is not None:
+            self._blast_dialog.show()
+            self._blast_dialog.raise_()
+            self._blast_dialog.activateWindow()
+            return
+        self._blast_dialog = BlastReferenceDialog(
+            self._graph,
+            self.canvas,
+            settings=self.settings,
+            tokens=self.tokens,
+            parent=self.window(),
+        )
+        self._blast_dialog.show()
+
+    def _close_blast_dialog(self) -> None:
+        dialog = self._blast_dialog
+        self._blast_dialog = None
+        if dialog is not None:
+            dialog.close()
+            dialog.deleteLater()
+
+    def shutdown(self) -> None:
+        """Stop a running reference BLAST before the viewer is destroyed."""
+        self._close_blast_dialog()
 
     def relayout(self) -> None:
         if self._graph is None:
@@ -857,14 +1001,24 @@ class GraphViewer(QWidget):
 class GraphViewerDialog(QWidget):
     """Non-modal large viewer window."""
 
-    def __init__(self, path: str, tokens: Tokens, parent=None):
+    def __init__(
+        self,
+        path: str,
+        tokens: Tokens,
+        parent=None,
+        settings: Optional[Settings] = None,
+    ):
         super().__init__(parent, Qt.Window)
         self.setWindowTitle(f"Assembly graph · {Path(path).name}")
         self.resize(1120, 780)
         self.setWindowFlag(Qt.Window, True)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
-        self.viewer = GraphViewer(tokens)
+        self.viewer = GraphViewer(tokens, settings=settings)
         layout.addWidget(self.viewer)
         self.viewer.load_file(path)
         self.setAttribute(Qt.WA_DeleteOnClose, True)
+
+    def closeEvent(self, event) -> None:  # noqa: N802 - Qt API
+        self.viewer.shutdown()
+        super().closeEvent(event)

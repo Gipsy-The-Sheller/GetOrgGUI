@@ -72,6 +72,10 @@ def plugin_info() -> dict:
             for key, meta in ORGANELLES.items()
         },
         "preprocessing": "fastp 1.0.1 (optional adapter trimming / filtering)",
+        "graph_analysis": (
+            "Reference GenBank BLAST+ screening in the graph viewer "
+            "(blastn full record or tblastn annotated CDS)"
+        ),
         "citation_keys": list(CITATIONS),
         "skill": "skills/getorganelle.md",
         "result_schema": "yrmpe.result.v1",
@@ -162,6 +166,18 @@ def control_bindings() -> List[dict]:
          "cli": ["--fastp-dedup"]},
         {"id": "fastp_extra_args", "widget": "extra_edit", "label": "fastp extra options", "kind": "text",
          "cli": ["--fastp-extra", "{value}"], "notes": "Protected input/output/report/thread flags are rejected."},
+        {"id": "graph_blast_reference", "widget": "blast.reference_input",
+         "label": "Reference GenBank", "kind": "path", "cli": [],
+         "notes": "GUI-only post-analysis; .gb/.gbk/.gbff is parsed locally, not passed to GetOrganelle."},
+        {"id": "graph_blast_mode", "widget": "blast.mode_combo", "label": "BLAST mode",
+         "kind": "choice", "choices": {"Full reference": "blastn", "Annotated CDS": "tblastn"},
+         "cli": [], "notes": "GUI-only; runs bundled BLAST+ directly against graph node sequences."},
+        {"id": "graph_blast_search_evalue", "widget": "blast.search_combo",
+         "label": "BLAST search E-value", "kind": "text", "cli": [],
+         "notes": "GUI-only; changing the highlight E-value does not rerun BLAST."},
+        {"id": "graph_blast_highlight_filters", "widget": "blast.filters",
+         "label": "BLAST highlight filters", "kind": "group", "cli": [],
+         "notes": "GUI-only: E-value, identity, alignment length, query coverage and distinct genes."},
     ]
 
 

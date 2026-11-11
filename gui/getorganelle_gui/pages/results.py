@@ -180,7 +180,10 @@ class ResultsPage(ScrollPage):
         text_layout.setContentsMargins(0, 0, 0, 0)
         text_layout.addWidget(self.preview)
         self.preview_tabs.addTab(text_tab, "Text")
-        self.graph_view = GraphViewer(getattr(self.wb, "_tokens", LIGHT))
+        self.graph_view = GraphViewer(
+            getattr(self.wb, "_tokens", LIGHT),
+            settings=getattr(self.wb, "settings", None),
+        )
         self.preview_tabs.addTab(self.graph_view, "Graph")
         self.preview_tabs.setTabEnabled(1, False)
         right.body.addWidget(self.preview_tabs)
@@ -350,6 +353,16 @@ class ResultsPage(ScrollPage):
         for dialog in list(self._graph_dialogs):
             dialog.viewer.set_tokens(tokens)
 
+    def set_settings(self, settings) -> None:
+        self.graph_view.settings = settings
+        for dialog in list(self._graph_dialogs):
+            dialog.viewer.settings = settings
+
+    def shutdown_graph_view(self) -> None:
+        self.graph_view.shutdown()
+        for dialog in list(self._graph_dialogs):
+            dialog.viewer.shutdown()
+
     def _open_large_graph(self) -> None:
         rows = self.table.selectionModel().selectedRows()
         if not rows:
@@ -360,7 +373,12 @@ class ResultsPage(ScrollPage):
         path = self.items[row].path
         if Path(path).suffix.lower() not in (".gfa", ".fastg"):
             return
-        dialog = GraphViewerDialog(path, getattr(self.wb, "_tokens", LIGHT), self)
+        dialog = GraphViewerDialog(
+            path,
+            getattr(self.wb, "_tokens", LIGHT),
+            self,
+            settings=getattr(self.wb, "settings", None),
+        )
         self._graph_dialogs.append(dialog)
         dialog.destroyed.connect(
             lambda: self._graph_dialogs.remove(dialog)

@@ -45,8 +45,18 @@ Bandage 的视觉语言：
   带圆角端帽、描边、阴影、选中光晕与高光；覆盖度同时决定颜色和粗细。
 - 支持拖动节点/平移、以光标为中心缩放、按节点 ID 搜索、覆盖度/长度/GC
   着色、ID/长度/覆盖度标签（自动避让），以及 PNG 导出。
-- 这是查看器而非 Bandage 替代品：不支持 BLAST/NCBI 搜索、插件布局或图
-  编辑；单文件上限 80 MB。超大图或需要 BLAST 时请用 Bandage-NG。
+- **参考 GenBank BLAST**：**BLAST ref…** 打开非模态对话框，用内置
+  BLAST+ 对图节点做筛选。全量参考用 `blastn`；解析 CDS 注释、翻译后
+  用 `tblastn`。高亮 E 值以及一致性、比对长度、query 覆盖度、不同基因
+  数等证据过滤器可在缓存结果上实时调整，无需重跑 BLAST；通过的节点会
+  加洋红色轮廓和 BLAST 徽标，其余节点变暗。可复制节点 ID、导出 TSV，
+  或将通过的节点序列导出为 FASTA。
+- 这是查看器而非 Bandage 替代品：没有 NCBI 远程 BLAST、插件布局或图
+  编辑；单文件上限 80 MB。超大图请用 Bandage/Bandage-NG。
+
+**关于 NUMT/NUPT**：核基因组中的细胞器插入片段可能几乎完美匹配参考，
+仅靠 E 值不能证明节点来自叶绿体。建议用 `tblastn` 并要求 ≥ 2 个不同
+注释基因，同时结合节点覆盖度、reads 支持和组装上下文人工确认。
 
 Bandage 引用：Wick RR, Schultz MB, Zobel J, Holt KE. *Bandage:
 interactive visualization of de novo genome assemblies.* Bioinformatics
@@ -91,7 +101,8 @@ venv\Scripts\python.exe -m getorganelle_gui.cli run --mode reads ^
 - GUI 仅 x64（PyQt5 无 arm64 wheel）。
 - fastp 为静态链接的 Windows 构建；Linux/macOS 用户请使用各自平台的 fastp。
 - 路径建议不要包含空格；GetOrganelle 内部仍有文本命令拼接。
-- 内置图查看器不含 BLAST/NCBI 搜索、插件布局与图编辑；重图请用
+- 内置图查看器的 BLAST 只搜索本地自建图库，不连接 NCBI；重图请用
   Bandage/Bandage-NG。
+- E 值不能单独排除 NUMT/NUPT；请结合多基因证据、覆盖度与 reads 支持。
 - GUI 不是 YR-MPE 的宿主插件本体，但已实现 `ResultSpec`、
   `control_bindings()`、skill 文档与 provenance，可作为插件层接入。

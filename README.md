@@ -97,7 +97,9 @@ Preprocess → Parameters → Run → Results）。它按 YR-MPE 的插件契约
 分层、内联校验、非模态后台任务、Job Center、结果预览、`run.json` 溯源、
 数据库管理与浅/深色主题。GFA/FASTG 还可在内置的 Bandage 风格交互查看器中
 按节点长度/弯曲多段折线绘制，支持覆盖度着色、搜索、拖动、缩放与 PNG 导出。
-详见 `gui/README.md` 与 `gui/NOTE.md`（Windows-first）。
+查看器还可用内置 BLAST+ 对用户提供的 GenBank 参考做 `blastn`（全量）或
+`tblastn`（注释 CDS）筛选，并按 E 值/一致性/比对长度/不同基因数高亮候选
+叶绿体 contig；详见 `gui/README.md` 与 `gui/NOTE.md`（Windows-first）。
 
 同一套模型还提供 headless / agent 接口：
 
@@ -116,8 +118,10 @@ venv\Scripts\python.exe -m getorganelle_gui.cli run --mode reads --reads1 R1.fq.
 - Bowtie2 的 Windows 构建不支持 mmap / 共享内存，`--mm` 会被包装器移除。
 - `--time-limit` 在 Windows 上不生效。
 - 路径建议不含空格；Bandage 可视化可选。
-- 内置图查看器不含 BLAST/NCBI 搜索，单文件上限 80 MB；重图请用
-  Bandage/Bandage-NG。
+- 内置图查看器的参考 BLAST 使用本地 BLAST+，不连接 NCBI；单文件上限
+  80 MB，重图请用 Bandage/Bandage-NG。
+- E 值不能单独排除 NUMT/NUPT；请结合多个注释基因、节点覆盖度与 reads
+  支持人工确认。
 - arm64 版 BLAST+ 依赖 Windows 11 的 x64 模拟；Biopython 在 arm64 上暂不安装。
 
 ## 许可证

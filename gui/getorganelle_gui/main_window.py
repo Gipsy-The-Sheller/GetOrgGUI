@@ -562,6 +562,7 @@ class MainWindow(QMainWindow):
             pass
         self.deps = probe_dependencies(self.settings, check_versions=False)
         self.db_status = database_status(self.settings)
+        self.results_page.set_settings(self.settings)
         self.config.output_root = self.settings.workspace_root
         self.config.threads = self.settings.threads
         self.inputs_page.workspace_input.setText(self.settings.workspace_root)
@@ -670,6 +671,7 @@ class MainWindow(QMainWindow):
             self.runner.cancel()
             if self.runner.process is not None:
                 self.runner.process.waitForFinished(3000)
+        self.results_page.shutdown_graph_view()
         self.settings.window_geometry = bytes(self.saveGeometry().toBase64()).decode("ascii")
         try:
             self.settings.save()

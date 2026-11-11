@@ -53,9 +53,29 @@ a larger non-modal window.
 - **Interaction.** Drag nodes or empty space, wheel zoom (cursor-anchored),
   search by node ID, switch coverage/length/GC colouring, show ID/length/
   coverage labels (collision-aware), and export PNG.
-- **Limits.** This is a viewer, not a Bandage replacement: no BLAST/NCBI
-  search, no plugin layouts or graph editing, and the in-app reader caps graph
-  files at 80 MB. Use Bandage/Bandage-NG for very large graphs or BLAST.
+- **Reference BLAST.** The **BLAST ref…** button opens a non-modal dialog that
+  screens graph nodes against a GenBank reference with the bundled BLAST+:
+  full-record `blastn` or annotated-CDS `tblastn`. The highlight E-value and
+  evidence filters (identity, alignment length, query coverage, distinct
+  annotated genes) update the magenta node highlights from cached hits without
+  rerunning BLAST. Passing node IDs, a node-level TSV and a filtered node
+  FASTA can be exported.
+- **Limits.** This is a viewer, not a Bandage replacement: no NCBI remote
+  BLAST, no plugin layouts or graph editing, and the in-app reader caps graph
+  files at 80 MB. Use Bandage/Bandage-NG for very large graphs or its BLAST
+  integration.
+
+### Screening organelle contigs
+
+`blastn` is useful when the reference is the organelle genome itself.
+`tblastn` is often more informative for a GenBank record because every
+annotated CDS becomes an independent query; requiring hits to ≥ 2 distinct
+genes is a simple guard against single-gene NUPT/NUMT-like insertions.
+
+E-value alone is **not** proof of organelle origin: nuclear organelle-derived
+insertions can match a reference nearly perfectly. Treat BLAST as one line of
+evidence together with node coverage, read support and assembly context. The
+dialog documents this limitation next to the filters.
 
 Bandage citation: Wick RR, Schultz MB, Zobel J, Holt KE. *Bandage:
 interactive visualization of de novo genome assemblies.* Bioinformatics
@@ -134,6 +154,8 @@ gui/
 │  ├─ preprocess.py      # fastp command builder and report summary
 │  ├─ graph_model.py     # GFA/FASTG parser, endpoint force layout (no Qt)
 │  ├─ graph_viewer.py    # QPainter graph canvas, toolbar, large viewer
+│  ├─ reference_blast.py # GenBank parser, BLAST+ runner, hit filters (no Qt)
+│  ├─ blast_dialog.py    # non-modal reference BLAST dialog and hit table
 │  ├─ pages/             # Inputs, Preprocess, Parameters, Run, Results
 │  ├─ main_window.py     # rail + pages + inspector + job center
 │  ├─ settings_dialog.py # paths/runtime/theme/asynchronous dependency check
@@ -158,6 +180,8 @@ venv\Scripts\python.exe gui\tests\gui_smoke.py
 `build/`. `gui_run_smoke.py` runs a real GetOrganelle job through the GUI's
 runner; `gui_preprocess_smoke.py` runs fastp → GetOrganelle
 (requires the built dependencies and the synthetic test reads).
+`blast_smoke.py` runs an optional synthetic `blastn` + `tblastn` integration
+test and skips when the bundled BLAST+ tools are absent.
 
 ## Scaling note
 

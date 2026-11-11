@@ -31,6 +31,22 @@ from getorganelle_gui.models import (
 )
 from getorganelle_gui.plugin_meta import control_bindings, plugin_info
 from getorganelle_gui.preprocess import build_preprocess_plan, summarize_fastp
+from getorganelle_gui.reference_blast import (
+    BlastFilters,
+    BlastHit,
+    BlastResult,
+    BlastRunConfig,
+    NodeBlastSummary,
+    build_reference_queries,
+    build_result,
+    extract_location,
+    feature_protein,
+    filter_node_hits,
+    format_evalue,
+    parse_blast_tabular,
+    parse_genbank,
+    translate_nt,
+)
 from getorganelle_gui.results import (
     build_result_spec,
     build_run_result,
@@ -429,6 +445,162 @@ L	3	+	4	-	0M
         self.assertGreater(long_span, short_span)
         edge = graph.edges[0]
         self.assertEqual(edge_endpoint_sides(graph, edge), (1, 1))
+
+
+class ReferenceBlastTests(unittest.TestCase):
+    SEQUENCE = "ATGAAAACCGCTGCTTAAGGGCCCTTTAAAACCCGGGTTTAAACCCGGGTTTAAACCCGGGTTT"
+
+    def _genbank(self, path: Path) -> None:
+        sequence = self.SEQUENCE
+        path.write_text(
+            f"""LOCUS       TESTREF {len(sequence):>11} bp    DNA     linear
+ACCESSION   TESTREF
+VERSION     TESTREF.1
+FEATURES             Location/Qualifiers
+     source          1..{len(sequence)}
+     CDS             complement(join(1..9,
+                     16..24))
+                     /gene="rbcL"
+                     /product="ribulose bisphosphate carboxylase"
+                     /translation="MKTAAW
+                     QHPRV"
+     CDS             25..54
+                     /gene="matK"
+                     /transl_table=11
+ORIGIN
+        1 {sequence.lower()}
+//
+""",
+            encoding="utf-8",
+        )
+
+    def test_locations_and_translation(self):
+        sequence = self.SEQUENCE
+        joined = sequence[0:9] + sequence[15:24]
+        self.assertEqual(
+            extract_location(sequence, "complement(join(1..9,16..24))"),
+            reverse_complement_for_test(joined),
+        )
+        self.assertEqual(extract_location(sequence, "1..9"), sequence[:9])
+        self.assertEqual(translate_nt("TGA" * 10, 11), "W" * 10)
+        self.assertIn("*", translate_nt("TGA" * 10, 1))
+
+    def test_genbank_parser_and_queries(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "ref.gb"
+            self._genbank(path)
+            records = parse_genbank(str(path))
+            self.assertEqual(len(records), 1)
+            record = records[0]
+            self.assertEqual(record.name, "TESTREF")
+            self.assertEqual(record.version, "TESTREF.1")
+            self.assertEqual(record.length, len(self.SEQUENCE))
+            genes = [feature.gene for feature in record.features]
+            self.assertIn("rbcL", genes)
+            self.assertIn("matK", genes)
+            rbc = next(feature for feature in record.features if feature.gene == "rbcL")
+            self.assertEqual(feature_protein(rbc, record.sequence), "MKTAAWQHPRV")
+            blastn_queries = build_reference_queries(records, "blastn")
+            self.assertEqual(len(blastn_queries), 1)
+            self.assertIn("TESTREF.1", blastn_queries[0].label)
+            tblastn_queries = build_reference_queries(records, "tblastn")
+            self.assertTrue(any(query.gene == "rbcL" for query in tblastn_queries))
+            self.assertTrue(all(query.sequence for query in tblastn_queries))
+
+    def test_blast_tabular_filtering(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "ref.gb"
+            self._genbank(path)
+            records = parse_genbank(str(path))
+            queries = build_reference_queries(records, "blastn")
+            mapping = {"node_000001": "node1"}
+            hits = parse_blast_tabular(
+                "ref_001\tnode_000001\t99.5\t100\t0\t0\t1\t100\t5\t104"
+                "\t1e-30\t200\t100\t500\n",
+                mapping,
+                queries,
+                "blastn",
+            )
+            self.assertEqual(len(hits), 1)
+            self.assertEqual(hits[0].node_id, "node1")
+            self.assertAlmostEqual(hits[0].query_coverage, 1.0)
+            self.assertAlmostEqual(hits[0].subject_coverage, 0.2)
+            graph = parse_gfa("S\tnode1\tACGTACGTACGT\tLN:i:12\tRC:i:24\n")
+            config = BlastRunConfig(
+                reference_path=str(path),
+                mode="blastn",
+                evalue=1e-3,
+                threads=1,
+                work_dir=temp,
+                blastn="blastn",
+                tblastn="tblastn",
+                makeblastdb="makeblastdb",
+            )
+            result = build_result(
+                graph,
+                config,
+                queries,
+                mapping,
+                0,
+                hits,
+                [],
+                "start",
+                "finish",
+            )
+            self.assertEqual(len(filter_node_hits(result, BlastFilters(evalue=1e-40))), 0)
+            views = filter_node_hits(result, BlastFilters(evalue=1e-10))
+            self.assertEqual(len(views), 1)
+            self.assertEqual(views[0].node_id, "node1")
+            self.assertEqual(views[0].distinct_genes, 1)
+            self.assertEqual(format_evalue(1e-30), "1.0e-30")
+
+    def test_tblastn_distinct_gene_filter(self):
+        def hit(query_id, gene):
+            return BlastHit(
+                query_id=query_id,
+                query_label=gene,
+                gene=gene,
+                node_id="node1",
+                pident=95.0,
+                length=40,
+                mismatch=2,
+                gapopen=0,
+                qstart=1,
+                qend=40,
+                sstart=1,
+                send=120,
+                evalue=1e-25,
+                bitscore=150.0,
+                qlen=50,
+                slen=300,
+                query_coverage=0.8,
+                subject_coverage=0.4,
+                mode="tblastn",
+            )
+
+        hits = [hit("prot_1", "rbcL"), hit("prot_2", "matK")]
+        result = BlastResult(
+            mode="tblastn",
+            evalue=1e-3,
+            reference_path="ref.gb",
+            work_dir=".",
+            query_count=2,
+            subject_count=1,
+            total_nodes=1,
+            skipped_nodes=0,
+            hits=hits,
+            nodes={"node1": NodeBlastSummary("node1", hits)},
+        )
+        two = filter_node_hits(result, BlastFilters(evalue=1e-10, min_distinct_genes=2))
+        self.assertEqual(len(two), 1)
+        self.assertEqual(two[0].distinct_genes, 2)
+        three = filter_node_hits(result, BlastFilters(evalue=1e-10, min_distinct_genes=3))
+        self.assertEqual(three, [])
+
+
+def reverse_complement_for_test(sequence: str) -> str:
+    translation = str.maketrans("ACGT", "TGCA")
+    return sequence.translate(translation)[::-1]
 
 
 class MetadataTests(unittest.TestCase):

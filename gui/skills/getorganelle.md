@@ -38,7 +38,34 @@ Check it with `Manage databases…` in the GUI or `getorganelle_config.py --list
 4. **Run** — fix any inline validation message, then press `F5` / Run. The job
    is non-modal; Cancel stops the whole process tree (fastp and GetOrganelle).
 5. **Results** — inspect sequence and graph files, the fastp before/after read
-   counts, warnings, and provenance (`run.json`).
+   counts, warnings, and provenance (`run.json`). GFA/FASTG files open in a
+   length-aware graph viewer with an interactive **BLAST ref…** screen.
+
+## Reference BLAST screening
+
+The graph viewer can compare graph nodes with a user-supplied GenBank file
+using the bundled BLAST+ 2.17.0. This is a GUI post-analysis step; it does not
+change the GetOrganelle run or its `run.json`.
+
+- **Full reference (blastn)** — the complete GenBank record is the query.
+- **Annotated CDS (tblastn)** — CDS features are translated (using
+  `/translation`, otherwise `/transl_table`, `/codon_start` and the ORIGIN
+  sequence) and searched against the six-frame translation of graph nodes.
+- **Live highlight filter** — the highlight E-value can be tightened without
+  rerunning BLAST. Additional filters require minimum identity, alignment
+  length, query coverage and, for tblastn, a minimum number of distinct
+  annotated genes. Passing nodes get a magenta outline and a BLAST badge;
+  non-passing nodes are dimmed.
+- **Export** — double-click a row to focus the node; copy node IDs, export a
+  node-level TSV, or export the passing node sequences as FASTA. BLAST files
+  and logs stay under `<workspace>/_workbench/blast/<timestamp>_<graph>/`.
+
+E-value alone cannot distinguish a true organelle contig from a NUPT/NUMT-like
+nuclear insertion, which can match a reference almost perfectly. Treat the
+screen as evidence: prefer tblastn with ≥ 2 annotated genes, high identity and
+alignment length, and verify candidates against node coverage, read support
+and the assembly context. This viewer is not a Bandage replacement and does
+not perform BLAST database searches against NCBI.
 
 ## Agent notes
 
