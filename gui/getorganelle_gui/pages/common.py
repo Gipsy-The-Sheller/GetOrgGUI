@@ -15,8 +15,8 @@ class ScrollPage(QScrollArea):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.body = QWidget()
         self.layout = QVBoxLayout(self.body)
-        self.layout.setContentsMargins(24, 20, 24, 24)
-        self.layout.setSpacing(16)
+        self.layout.setContentsMargins(16, 14, 16, 16)
+        self.layout.setSpacing(12)
         self.setWidget(self.body)
 
     def add(self, widget: QWidget) -> QWidget:

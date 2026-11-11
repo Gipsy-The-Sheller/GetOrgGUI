@@ -49,6 +49,7 @@ for dll in "${RUNTIME_DLLS[@]}"; do
   fi
 done
 cp -a "$STAGE/bowtie2" "$DEPS/bowtie2"
+cp -a "$STAGE/fastp" "$DEPS/fastp"
 cp -a "$STAGE/ncbi-blast" "$DEPS/ncbi-blast"
 cp -a "$STAGE/samtools/bin/samtools.exe" "$DEPS/samtools/bin/"
 if [[ -f "$ROOT/vendor/samtools/COPYING" ]]; then

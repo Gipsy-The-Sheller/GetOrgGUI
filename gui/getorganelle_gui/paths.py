@@ -233,6 +233,24 @@ def probe_dependencies(settings: Settings, check_versions: bool = False) -> Depe
         detail="" if python_ok else "Configured Python interpreter is missing",
     )
 
+    fastp = dep_root / "fastp" / "fastp.exe"
+    fastp_ok = fastp.is_file()
+    fastp_version = ""
+    if check_versions and fastp_ok:
+        returncode, output = _capture([str(fastp), "--version"], timeout=10.0)
+        match = re.search(r"fastp\s+(\S+)", output)
+        if match:
+            fastp_version = match.group(1)
+    report.tools["fastp"] = ToolStatus(
+        key="fastp",
+        label="fastp",
+        path=str(fastp),
+        version=fastp_version,
+        ok=fastp_ok,
+        detail="Optional adapter/quality preprocessing",
+        required=False,
+    )
+
     report.modules = _python_modules(python, deep=check_versions)
     return report
 

@@ -37,6 +37,8 @@ jobs:
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-libdeflate
+            mingw-w64-x86_64-isa-l
             mingw-w64-x86_64-libgnurx
             mingw-w64-x86_64-libsystre
             mingw-w64-x86_64-libtre
@@ -52,6 +54,7 @@ jobs:
         run: |
           ./stage/x64/samtools/bin/samtools.exe --version
           ./stage/x64/bowtie2/bowtie2-align-s.exe --version
+          ./stage/x64/fastp/fastp.exe --version
           ./stage/x64/ncbi-blast/blastn.exe -version
           ./stage/x64/spades/bin/spades-core.exe || true
 
@@ -86,6 +89,8 @@ jobs:
             mingw-w64-clang-aarch64-cmake
             mingw-w64-clang-aarch64-ninja
             mingw-w64-clang-aarch64-zlib
+            mingw-w64-clang-aarch64-libdeflate
+            mingw-w64-clang-aarch64-isa-l
             mingw-w64-clang-aarch64-libgnurx
             mingw-w64-clang-aarch64-libsystre
             mingw-w64-clang-aarch64-libtre
@@ -101,6 +106,7 @@ jobs:
         run: |
           ./stage/arm64/samtools/bin/samtools.exe --version
           ./stage/arm64/bowtie2/bowtie2-align-s.exe --version
+          ./stage/arm64/fastp/fastp.exe --version
           ./stage/arm64/ncbi-blast/blastn.exe -version
           ./stage/arm64/spades/bin/spades-core.exe || true
 

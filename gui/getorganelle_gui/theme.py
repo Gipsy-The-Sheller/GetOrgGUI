@@ -114,7 +114,7 @@ QWidget {
     background-color: transparent;
     color: $text;
     font-family: "Segoe UI Variable Text", "Segoe UI", "Noto Sans", sans-serif;
-    font-size: 12pt;
+    font-size: 13px;
 }
 QMainWindow, QDialog {
     background-color: $surface;
@@ -131,7 +131,7 @@ QToolTip {
     color: $text;
     border: 1px solid $outline_strong;
     border-radius: 4px;
-    padding: 6px 8px;
+    padding: 2px 4px;
 }
 
 /* ---------------------------------------------------------------- chrome */
@@ -145,12 +145,12 @@ QToolTip {
 }
 #RailButton {
     text-align: left;
-    padding: 10px 12px;
+    padding: 2px 4px;
     border: 1px solid transparent;
     border-radius: $radius;
     background: transparent;
     color: $text_secondary;
-    font-size: 11pt;
+    font-size: 12px;
 }
 #RailButton:hover {
     background-color: $surface_alt;
@@ -175,22 +175,22 @@ QToolTip {
 #StatusBar {
     background-color: $surface_sunken;
     color: $text_secondary;
-    font-size: 9pt;
+    font-size: 10px;
 }
 #StatusBar QLabel {
     background: transparent;
     color: $text_secondary;
-    font-size: 9pt;
+    font-size: 10px;
 }
 
 /* --------------------------------------------------------------- headings */
 #PageTitle {
-    font-size: 18pt;
+    font-size: 20px;
     font-weight: 500;
     color: $text;
 }
 #PageSubtitle {
-    font-size: 11pt;
+    font-size: 12px;
     color: $text_secondary;
 }
 #Card {
@@ -199,45 +199,45 @@ QToolTip {
     border-radius: $radius;
 }
 #CardTitle {
-    font-size: 14pt;
+    font-size: 15px;
     font-weight: 500;
     color: $text;
 }
 #CardSubtitle {
-    font-size: 10pt;
+    font-size: 11px;
     color: $text_secondary;
 }
 #FieldLabel {
     color: $text;
-    font-size: 10pt;
+    font-size: 11px;
 }
 #Hint, #Caption {
     color: $text_secondary;
-    font-size: 9pt;
+    font-size: 10px;
 }
 #FieldError {
     color: $error;
-    font-size: 9pt;
+    font-size: 10px;
 }
 #EmptyTitle {
-    font-size: 14pt;
+    font-size: 15px;
     font-weight: 500;
     color: $text;
 }
 #EmptyText {
     color: $text_secondary;
-    font-size: 11pt;
+    font-size: 12px;
 }
 #Mono {
     font-family: "Cascadia Mono", Consolas, monospace;
-    font-size: 10pt;
+    font-size: 11px;
 }
 
 /* ----------------------------------------------------------------- badges */
 #Badge {
     border-radius: 10px;
-    padding: 2px 9px;
-    font-size: 9pt;
+    padding: 1px 7px;
+    font-size: 10px;
     font-weight: 500;
     background-color: $surface_sunken;
     color: $text_secondary;
@@ -276,13 +276,13 @@ QToolTip {
 
 /* ---------------------------------------------------------------- buttons */
 QPushButton {
-    font-size: 11pt;
+    font-size: 12px;
     background-color: $surface_alt;
     color: $text;
     border: 1px solid $outline;
     border-radius: 6px;
-    padding: 6px 14px;
-    min-height: 22px;
+    padding: 3px 10px;
+    min-height: 20px;
 }
 QPushButton:hover {
     border-color: $primary;
@@ -303,8 +303,8 @@ QPushButton:disabled {
     color: $primary_text;
     border: 1px solid $primary;
     font-weight: 500;
-    padding: 8px 20px;
-    min-height: 26px;
+    padding: 5px 14px;
+    min-height: 22px;
 }
 #PrimaryButton:hover {
     background-color: $primary_hover;
@@ -333,8 +333,8 @@ QPushButton:disabled {
     border: 1px solid transparent;
     border-radius: 6px;
     padding: 4px;
-    min-width: 28px;
-    min-height: 28px;
+    min-width: 22px;
+    min-height: 22px;
 }
 #IconButton:hover {
     background-color: $surface_sunken;
@@ -347,7 +347,7 @@ QPushButton:disabled {
     background-color: $surface_alt;
     border: 1px solid $outline;
     border-radius: 6px;
-    padding: 8px 18px;
+    padding: 4px 12px;
     color: $text_secondary;
 }
 #SegmentButton:checked {
@@ -383,13 +383,13 @@ QPushButton:disabled {
 
 /* ----------------------------------------------------------------- inputs */
 QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
-    font-size: 11pt;
+    font-size: 12px;
     background-color: $surface_alt;
     color: $text;
     border: 1px solid $outline;
     border-radius: 6px;
-    padding: 5px 8px;
-    min-height: 22px;
+    padding: 3px 6px;
+    min-height: 20px;
     selection-background-color: $primary;
     selection-color: $primary_text;
 }
@@ -455,7 +455,7 @@ QTabWidget::pane {
 QTabBar::tab {
     background: transparent;
     color: $text_secondary;
-    padding: 8px 14px;
+    padding: 4px 10px;
     border-bottom: 2px solid transparent;
 }
 QTabBar::tab:selected {
@@ -468,7 +468,7 @@ QTabBar::tab:hover {
 
 /* ----------------------------------------------------------------- tables */
 QTableWidget, QTableView {
-    font-size: 10pt;
+    font-size: 11px;
     background-color: $surface_alt;
     alternate-background-color: $surface_sunken;
     color: $text;
@@ -483,11 +483,11 @@ QHeaderView::section {
     color: $text_secondary;
     border: none;
     border-bottom: 1px solid $outline;
-    padding: 6px 8px;
-    font-size: 9pt;
+    padding: 2px 4px;
+    font-size: 10px;
 }
 QTableWidget::item {
-    padding: 4px 6px;
+    padding: 2px 4px;
 }
 QTableWidget:focus {
     border: 2px solid $primary;
@@ -500,7 +500,7 @@ QPlainTextEdit#LogView {
     border: 1px solid $outline;
     border-radius: 6px;
     font-family: "Cascadia Mono", "Consolas", monospace;
-    font-size: 10pt;
+    font-size: 11px;
     selection-background-color: $primary;
     selection-color: $primary_text;
 }
@@ -513,7 +513,7 @@ QTextEdit#Preview {
     border: 1px solid $outline;
     border-radius: 6px;
     font-family: "Cascadia Mono", "Consolas", monospace;
-    font-size: 10pt;
+    font-size: 11px;
 }
 
 /* --------------------------------------------------------------- progress */
@@ -522,8 +522,8 @@ QProgressBar {
     border: 1px solid $outline;
     border-radius: 4px;
     text-align: center;
-    min-height: 8px;
-    max-height: 8px;
+    min-height: 6px;
+    max-height: 6px;
     color: transparent;
 }
 QProgressBar::chunk {

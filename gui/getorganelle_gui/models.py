@@ -83,6 +83,36 @@ STATUS_RUNNING = "running"
 STATUS_IDLE = "idle"
 
 
+def split_organelles(value: str) -> List[str]:
+    """Parse a -F style list, preserving order but dropping duplicates."""
+    parts = [part.strip() for part in (value or "").replace(";", ",").split(",")]
+    seen = set()
+    result = []
+    for part in parts:
+        if part and part not in seen:
+            seen.add(part)
+            result.append(part)
+    return result
+
+
+def organelle_label(value: str) -> str:
+    types = split_organelles(value)
+    if not types:
+        return "No organelle selected"
+    return " + ".join(ORGANELLES.get(item, {}).get("label", item) for item in types)
+
+
+def organelle_slug(value: str) -> str:
+    types = split_organelles(value)
+    return "-".join(types) if types else "organelle"
+
+
+def organelle_default_rounds(value: str) -> int:
+    types = split_organelles(value)
+    rounds = [ORGANELLES.get(item, {}).get("rounds", 15) for item in types]
+    return max(rounds) if rounds else 15
+
+
 def now_iso() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
@@ -140,6 +170,20 @@ class RunConfig:
     config_dir: str = ""
     extra_args: str = ""
     database_types: str = ""
+    preprocess: bool = False
+    adapter_mode: str = "auto"  # auto | none | custom
+    adapter_sequence: str = ""
+    adapter_sequence_r2: str = ""
+    trim_front1: int = 0
+    trim_tail1: int = 0
+    trim_front2: int = 0
+    trim_tail2: int = 0
+    fastp_quality: int = 15
+    fastp_unqualified_percent: int = 40
+    fastp_min_length: int = 15
+    fastp_dedup: bool = False
+    fastp_extra_args: str = ""
+    fastp_threads: int = 0
 
     def __post_init__(self) -> None:
         if not self.run_name:
@@ -153,7 +197,7 @@ class RunConfig:
             stem = re.sub(r"[_.-]?(R?1|forward|fwd|read1)$", "", stem, flags=re.I)
         else:
             stem = "sample"
-        return slugify(f"{stem}_{self.organelle}")
+        return slugify(f"{stem}_{organelle_slug(self.organelle)}")
 
     @property
     def output_dir(self) -> Path:
@@ -236,7 +280,11 @@ class RunResult:
     @classmethod
     def from_dict(cls, data: dict) -> "RunResult":
         payload = dict(data or {})
-        payload["items"] = [OutputItem(**item) for item in payload.get("items", [])]
+        item_fields = set(OutputItem.__dataclass_fields__)
+        payload["items"] = [
+            OutputItem(**{key: value for key, value in item.items() if key in item_fields})
+            for item in payload.get("items", [])
+        ]
         known = {name for name in cls.__dataclass_fields__}
         return cls(**{key: value for key, value in payload.items() if key in known})
 

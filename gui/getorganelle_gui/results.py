@@ -354,6 +354,40 @@ def build_result_spec(
         started_at=result.started_at,
         completed_at=result.finished_at,
     )
+    runs = [run_spec]
+    preprocess = result.summary.get("preprocess") or {}
+    if preprocess:
+        fastp_commands = preprocess.get("commands") or []
+        runs.insert(
+            0,
+            RunSpec(
+                method="fastp-preprocess",
+                tool="fastp",
+                command=fastp_commands[0] if fastp_commands else [],
+                parameters={
+                    "adapter_mode": config.adapter_mode,
+                    "quality": config.fastp_quality,
+                    "unqualified_percent": config.fastp_unqualified_percent,
+                    "min_length": config.fastp_min_length,
+                    "dedup": config.fastp_dedup,
+                },
+                input_paths=[
+                    path
+                    for path in (config.reads_1, config.reads_2, config.unpaired)
+                    if path
+                ],
+                output_paths=preprocess.get("reports", []),
+                status="completed" if result.status != STATUS_ERROR else "failed",
+                cwd=preprocess.get("output_dir", ""),
+                metadata={
+                    "before_reads": preprocess.get("before_reads", 0),
+                    "after_reads": preprocess.get("after_reads", 0),
+                    "description": preprocess.get("description", ""),
+                },
+                started_at=result.started_at,
+                completed_at=result.finished_at,
+            ),
+        )
     return ResultSpec(
         source="getorganelle",
         datasets=[dataset],
@@ -362,5 +396,5 @@ def build_result_spec(
         warnings=result.warnings,
         tool="GetOrganelle",
         tool_version=tool_version,
-        runs=[run_spec],
+        runs=runs,
     )

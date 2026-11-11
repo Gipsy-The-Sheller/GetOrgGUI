@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json",
+  "default-registry": {
+    "kind": "git",
+    "repository": "https://github.com/microsoft/vcpkg",
+    "baseline": "5e6f1e8d1d4a8bf8c5a5e9e0c5f3e2d1a7b8c9d0"
+  },
+  "registries": [
+    {
+      "kind": "git",
+      "repository": "https://github.com/microsoft/vcpkg",
+      "baseline": "5e6f1e8d1d4a8bf8c5a5e9e0c5f3e2d1a7b8c9d0",
+      "packages": [
+        "isa-l",
+        "libdeflate"
+      ]
+    }
+  ],
+  "overlay-ports": [
+    "./vcpkg_ports"
+  ],
+  "overlay-triplets": [
+    "./vcpkg_triplets"
+  ]
+}

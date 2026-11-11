@@ -21,7 +21,7 @@ class JobCenter(QFrame):
         self.wb = workbench
         self.setObjectName("JobCenter")
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(16, 10, 16, 10)
+        outer.setContentsMargins(12, 6, 12, 6)
         outer.setSpacing(6)
 
         row = QHBoxLayout()
@@ -35,7 +35,7 @@ class JobCenter(QFrame):
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
         self.progress.setTextVisible(False)
-        self.progress.setMinimumWidth(180)
+        self.progress.setMinimumWidth(140)
         self.cancel_button = QPushButton("Cancel")
         self.cancel_button.setObjectName("DangerButton")
         self.cancel_button.setEnabled(False)

@@ -39,8 +39,8 @@ class Card(QFrame):
         super().__init__(parent)
         self.setObjectName("Card")
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(16, 16, 16, 16)
-        outer.setSpacing(12)
+        outer.setContentsMargins(12, 12, 12, 12)
+        outer.setSpacing(8)
         self.title_label: Optional[QLabel] = None
         self.subtitle_label: Optional[QLabel] = None
         if title:
@@ -54,7 +54,7 @@ class Card(QFrame):
             outer.addWidget(self.subtitle_label)
         self.body = QVBoxLayout()
         self.body.setContentsMargins(0, 0, 0, 0)
-        self.body.setSpacing(10)
+        self.body.setSpacing(8)
         outer.addLayout(self.body)
         outer.addStretch(1)
 

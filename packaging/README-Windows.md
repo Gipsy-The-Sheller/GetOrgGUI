@@ -10,6 +10,7 @@ GetOrganelle\                     GetOrganelle 1.8.0.1（含 Windows 补丁）
 GetOrganelleDep\Windows\
   SPAdes\                         SPAdes 4.3.0-dev（原生构建）
   bowtie2\                        Bowtie2 2.5.5（原生构建）
+  fastp\                          fastp 1.0.1（可选预处理，原生静态构建）
   ncbi-blast\                     NCBI BLAST+ 2.17.0（blastn / makeblastdb）
   samtools\bin\samtools.exe       samtools 1.25（可选）
 run_get_organelle_reads.bat
@@ -59,13 +60,15 @@ run_get_organelle_assembly.bat -g assembly_graph.gfa -F embplant_pt -o out -t 8
 
 ## 桌面 GUI
 
-双击 `GetOrganelleGUI.bat` 启动 **GetOrganelle Workbench**。工作流为
-Inputs → Parameters → Run → Results，包含：
+双击 `GetOrganelleGUI.bat` 启动 **GetOrganelle Workbench**（Windows-first）。
+工作流为 Inputs → Preprocess → Parameters → Run → Results，包含：
 
+- 多选细胞器类型（如 `embplant_pt,embplant_mt`）；
+- 可选 fastp 预处理：接头自动检测/自定义、质量与长度过滤、JSON/HTML 报告；
 - 参数 Basic / Advanced 分层、内联校验与命令预览；
 - 非模态后台任务、实时日志、单一 Cancel、完成后的结果横幅；
 - 结果表、FASTA/图文件预览、警告与 `run.json` 溯源；
-- 数据库状态检查与一键安装；
+- 数据库状态检查与一键安装（plastome/mitogenome 成对校验）；
 - 浅色 / 深色主题，状态同时用图标、文字和颜色表达；
 - 快捷键：F5 运行、Esc 取消、Ctrl+, 设置、Ctrl+Shift+O 打开输出。
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import (
@@ -105,9 +106,15 @@ class SettingsDialog(QDialog):
         self.config_input = FileInput(mode="directory", placeholder="Optional: custom GetOrganelle config folder")
         self.extra_path_edit = QLineEdit()
         self.extra_path_edit.setPlaceholderText("Optional: extra PATH entries separated by ;")
+        python_row = QHBoxLayout()
+        python_row.addWidget(self.python_input, 1)
+        use_python = QPushButton("Use running Python")
+        use_python.setToolTip("Use the interpreter that is running this GUI (the bundled venv by default).")
+        use_python.clicked.connect(self._use_running_python)
+        python_row.addWidget(use_python)
         form.addRow("GetOrganelle source", self.getorg_input)
         form.addRow("Bundled dependencies", self.dep_input)
-        form.addRow("Python interpreter", self.python_input)
+        form.addRow("Python interpreter", python_row)
         form.addRow("Workspace", self.workspace_input)
         form.addRow("GetOrganelle config", self.config_input)
         form.addRow("Extra PATH", self.extra_path_edit)
@@ -190,6 +197,14 @@ class SettingsDialog(QDialog):
         if theme_index >= 0:
             self.theme_combo.setCurrentIndex(theme_index)
         self._update_theme_preview()
+
+    def _use_running_python(self) -> None:
+        executable = Path(sys.executable)
+        if executable.name.lower() == "pythonw.exe":
+            candidate = executable.with_name("python.exe")
+            if candidate.is_file():
+                executable = candidate
+        self.python_input.setText(str(executable))
 
     def _update_theme_preview(self) -> None:
         self.theme_preview.set_state("info", "Info  ·  running")

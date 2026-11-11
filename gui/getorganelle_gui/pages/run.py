@@ -17,11 +17,11 @@ from ..models import (
     MODE_ASSEMBLY,
     MODE_DATABASE,
     MODE_READS,
-    ORGANELLES,
     STATUS_CANCELLED,
     STATUS_ERROR,
     STATUS_SUCCESS,
     STATUS_WARNING,
+    organelle_label,
 )
 from ..widgets import Badge, Card, LogView, Separator
 from .common import ScrollPage, caption, page_header
@@ -80,6 +80,9 @@ class RunPage(ScrollPage):
         form.addRow("Output", self.output_value)
         form.addRow("Threads", self.threads_value)
         form.addRow("Extending", self.scheme_value)
+        self.preprocess_value = QLabel("")
+        self.preprocess_value.setWordWrap(True)
+        form.addRow("Preprocess", self.preprocess_value)
         self.summary_card.body.addLayout(form)
         self.summary_card.body.addWidget(Separator())
 
@@ -133,7 +136,7 @@ class RunPage(ScrollPage):
         log_toolbar.addWidget(self.console_button)
         self.log_card.body.addLayout(log_toolbar)
         self.log_view = LogView()
-        self.log_view.setMinimumHeight(260)
+        self.log_view.setMinimumHeight(190)
         self.log_card.body.addWidget(self.log_view)
         self.add(self.log_card)
         self.add_stretch()
@@ -152,9 +155,7 @@ class RunPage(ScrollPage):
         else:
             parts = [path for path in (config.reads_1, config.reads_2, config.unpaired) if path]
             self.input_value.setText("\n".join(parts) if parts else "No reads selected")
-        self.organelle_value.setText(
-            ORGANELLES.get(config.organelle, {}).get("label", config.organelle)
-        )
+        self.organelle_value.setText(organelle_label(config.organelle))
         self.output_value.setText(str(config.output_dir))
         self.threads_value.setText(str(config.threads))
         if config.mode == MODE_READS:
@@ -165,6 +166,10 @@ class RunPage(ScrollPage):
         else:
             scheme = "Graph mode"
         self.scheme_value.setText(scheme)
+        if config.preprocess and config.mode == MODE_READS:
+            self.preprocess_value.setText("fastp adapter trimming / filtering")
+        else:
+            self.preprocess_value.setText("Off")
 
         while self.validation_layout.count():
             item = self.validation_layout.takeAt(0)

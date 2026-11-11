@@ -7,15 +7,24 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import (
     QButtonGroup,
     QCheckBox,
-    QComboBox,
     QFormLayout,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
+    QWidget,
 )
 
-from ..models import MODE_ASSEMBLY, MODE_READS, ORGANELLES, slugify
+from ..models import (
+    MODE_ASSEMBLY,
+    MODE_READS,
+    ORGANELLES,
+    organelle_default_rounds,
+    organelle_label,
+    split_organelles,
+    slugify,
+)
 from ..widgets import Badge, Card, FileInput
 from .common import ScrollPage, caption, hint, page_header
 
@@ -46,7 +55,7 @@ class InputsPage(ScrollPage):
         footer.addStretch(1)
         self.continue_button = QPushButton("Continue to parameters  →")
         self.continue_button.setObjectName("PrimaryButton")
-        self.continue_button.clicked.connect(lambda: self.wb.show_page("parameters"))
+        self.continue_button.clicked.connect(lambda: self.wb.show_page("preprocess"))
         footer.addWidget(self.continue_button)
         self.add_layout(footer)
         self.add_stretch()
@@ -85,7 +94,7 @@ class InputsPage(ScrollPage):
             "Paired FASTQ is recommended. Single-end or unpaired reads can be added as a fallback.",
         )
         form = QFormLayout()
-        form.setSpacing(12)
+        form.setSpacing(8)
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         self.r1_input = FileInput(filters=FASTQ_FILTER, placeholder="sample_1.fq.gz")
         self.r2_input = FileInput(filters=FASTQ_FILTER, placeholder="sample_2.fq.gz (optional)")
@@ -111,7 +120,7 @@ class InputsPage(ScrollPage):
             "Run GetOrganelle's graph-only mode on a SPAdes/GetOrganelle GFA or FASTG file.",
         )
         form = QFormLayout()
-        form.setSpacing(12)
+        form.setSpacing(8)
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         self.graph_input = FileInput(filters=GRAPH_FILTER, placeholder="assembly_graph.gfa")
         self.graph_input.path_changed.connect(self._on_input_path_changed)
@@ -126,19 +135,32 @@ class InputsPage(ScrollPage):
 
     def _build_organelle_card(self) -> None:
         self.organelle_card = Card(
-            "Organelle",
-            "The organelle type selects the seed and label databases and the default number of rounds.",
+            "Organelle types",
+            "Select one or more types. Multi-type runs use a comma-separated -F list "
+            "(for example embplant_pt,embplant_mt).",
         )
-        form = QFormLayout()
-        form.setSpacing(12)
-        form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
-        self.organelle_combo = QComboBox()
-        for key, meta in ORGANELLES.items():
-            self.organelle_combo.addItem(meta["label"], key)
-        self.organelle_combo.currentIndexChanged.connect(self._on_organelle_changed)
-        form.addRow("Organelle type", self.organelle_combo)
+        grid_widget = QWidget()
+        grid = QGridLayout(grid_widget)
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setHorizontalSpacing(16)
+        grid.setVerticalSpacing(4)
+        self.organelle_checks = {}
+        for index, (key, meta) in enumerate(ORGANELLES.items()):
+            checkbox = QCheckBox(meta["label"])
+            checkbox.setToolTip(
+                f"{meta['detail']} Default -R {meta['rounds']}."
+            )
+            checkbox.toggled.connect(self._on_organelle_changed)
+            grid.addWidget(checkbox, index // 2, index % 2)
+            self.organelle_checks[key] = checkbox
+        self.organelle_card.body.addWidget(grid_widget)
         self.organelle_detail = caption("")
-        form.addRow("", self.organelle_detail)
+        self.organelle_card.body.addWidget(self.organelle_detail)
+        self.organelle_hint = QLabel("")
+        self.organelle_hint.setObjectName("FieldError")
+        self.organelle_hint.setWordWrap(True)
+        self.organelle_hint.hide()
+        self.organelle_card.body.addWidget(self.organelle_hint)
         db_row = QHBoxLayout()
         self.db_badge = Badge("Checking database…", "idle")
         self.manage_db_button = QPushButton("Manage databases…")
@@ -146,10 +168,9 @@ class InputsPage(ScrollPage):
         db_row.addWidget(self.db_badge)
         db_row.addStretch(1)
         db_row.addWidget(self.manage_db_button)
-        form.addRow("Local database", db_row)
+        self.organelle_card.body.addLayout(db_row)
         self.db_detail = caption("")
-        form.addRow("", self.db_detail)
-        self.organelle_card.body.addLayout(form)
+        self.organelle_card.body.addWidget(self.db_detail)
         self.add(self.organelle_card)
 
     def _build_output_card(self) -> None:
@@ -158,7 +179,7 @@ class InputsPage(ScrollPage):
             "Each run gets its own folder under the workspace. The run name is used for the folder and result files.",
         )
         form = QFormLayout()
-        form.setSpacing(12)
+        form.setSpacing(8)
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         self.workspace_input = FileInput(
             mode="directory", placeholder="Workspace folder"
@@ -193,9 +214,9 @@ class InputsPage(ScrollPage):
         self.r2_input.setText(config.reads_2)
         self.unpaired_input.setText(config.unpaired)
         self.graph_input.setText(config.graph)
-        index = self.organelle_combo.findData(config.organelle)
-        if index >= 0:
-            self.organelle_combo.setCurrentIndex(index)
+        selected = split_organelles(config.organelle) or ["embplant_pt"]
+        for key, checkbox in self.organelle_checks.items():
+            checkbox.setChecked(key in selected)
         self.workspace_input.setText(config.output_root or self.wb.settings.workspace_root)
         self.run_name_edit.setText(config.run_name)
         self.overwrite_check.setChecked(config.overwrite)
@@ -210,7 +231,8 @@ class InputsPage(ScrollPage):
         config.reads_2 = self.r2_input.text()
         config.unpaired = self.unpaired_input.text()
         config.graph = self.graph_input.text()
-        config.organelle = self.organelle_combo.currentData() or "embplant_pt"
+        selected = self._selected_organelles()
+        config.organelle = ",".join(selected) if selected else "embplant_pt"
         config.output_root = self.workspace_input.text() or self.wb.settings.workspace_root
         config.run_name = self.run_name_edit.text().strip()
         config.overwrite = self.overwrite_check.isChecked()
@@ -251,7 +273,26 @@ class InputsPage(ScrollPage):
         self._update_output_preview()
         self._changed()
 
-    def _on_organelle_changed(self) -> None:
+    def _selected_organelles(self) -> list:
+        return [
+            key for key, checkbox in self.organelle_checks.items() if checkbox.isChecked()
+        ]
+
+    def _on_organelle_changed(self, checked: bool = False) -> None:
+        if not self._loading:
+            selected = self._selected_organelles()
+            if not selected:
+                sender = self.sender()
+                if isinstance(sender, QCheckBox):
+                    sender.blockSignals(True)
+                    sender.setChecked(True)
+                    sender.blockSignals(False)
+                self.organelle_hint.setText(
+                    "Keep at least one organelle type selected; use the checkbox list to combine types."
+                )
+                self.organelle_hint.show()
+                return
+            self.organelle_hint.hide()
         self._update_organelle_detail()
         self.refresh_databases()
         if self._loading:
@@ -263,11 +304,22 @@ class InputsPage(ScrollPage):
         self._changed()
 
     def _update_organelle_detail(self) -> None:
-        data = self.organelle_combo.currentData()
-        meta = ORGANELLES.get(data, {})
-        self.organelle_detail.setText(
-            f"{meta.get('detail', '')}  Default -R {meta.get('rounds', 15)} · target ≈ {int(meta.get('target_size', '0')):,} bp."
-        )
+        selected = self._selected_organelles()
+        if not selected:
+            self.organelle_detail.setText("")
+            return
+        rounds = organelle_default_rounds(",".join(selected))
+        if len(selected) == 1:
+            meta = ORGANELLES.get(selected[0], {})
+            self.organelle_detail.setText(
+                f"{meta.get('detail', '')}  Default -R {rounds} · target ≈ "
+                f"{int(meta.get('target_size', '0')):,} bp."
+            )
+        else:
+            self.organelle_detail.setText(
+                f"{len(selected)} types: {organelle_label(','.join(selected))}. "
+                f"GetOrganelle runs a combined assembly; default -R {rounds}."
+            )
 
     def _update_output_preview(self) -> None:
         root = self.workspace_input.text().strip() or self.wb.settings.workspace_root
@@ -276,25 +328,35 @@ class InputsPage(ScrollPage):
 
     # -------------------------------------------------------------- databases
     def refresh_databases(self) -> None:
-        organelle = self.organelle_combo.currentData()
-        status = self.wb.db_status.get(organelle)
-        if status is None:
-            self.db_badge.set_state("idle", "Not checked")
-            self.db_detail.setText("")
-            return
-        if status.ready:
-            self.db_badge.set_state("success", "Seed + label installed")
-            self.db_detail.setText(str(Path(status.seed_path).parent))
-        else:
-            missing = []
-            if not status.seed:
-                missing.append("seed")
-            if not status.label_db:
-                missing.append("label")
-            self.db_badge.set_state("warning", "Database incomplete")
+        selected = [item for item in self._selected_organelles() if item != "anonym"]
+        config_dir = self.wb.deps.config_dir or str(Path.home() / ".GetOrganelle")
+        if not selected:
+            self.db_badge.set_state("info", "Custom seed required")
             self.db_detail.setText(
-                "Missing " + " and ".join(missing) + " database. Open Manage databases to install it."
+                "“Unknown organelle” needs a seed FASTA and gene database under Advanced options."
             )
+            return
+        required = set(selected)
+        # GetOrganelle treats the plastome and mitogenome databases as a pair.
+        if "embplant_pt" in selected or "embplant_mt" in selected:
+            required.update({"embplant_pt", "embplant_mt"})
+        missing = []
+        for key in sorted(required):
+            status = self.wb.db_status.get(key)
+            if status is None or not status.ready:
+                missing.append(ORGANELLES.get(key, {}).get("label", key))
+        if missing:
+            self.db_badge.set_state(
+                "warning",
+                f"{len(required) - len(missing)}/{len(required)} databases ready",
+            )
+            self.db_detail.setText("Missing: " + ", ".join(missing) + ". Open Manage databases to install them.")
+        else:
+            self.db_badge.set_state(
+                "success",
+                f"{len(required)} database(s) ready" if len(required) > 1 else "Seed + label installed",
+            )
+            self.db_detail.setText(config_dir)
 
     # -------------------------------------------------------------- validation
     def apply_issues(self, grouped: dict) -> None:

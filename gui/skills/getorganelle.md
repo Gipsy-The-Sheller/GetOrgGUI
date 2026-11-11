@@ -19,20 +19,26 @@ biologically correct organelle type for you.
 | Assembly graph | .gfa or .fastg | Reads mode is skipped. |
 | Seed FASTA | .fa / .fasta / .fna | Only for `anonym` or a custom seed. |
 | Gene database | FASTA or BLAST DB basename | Only for `anonym` or `--genes`. |
+| fastp | bundled fastp 1.0.1 | Optional preprocessing stage for adapter trimming/filtering. |
 
-A seed/label database must be installed for every non-`anonym` organelle type.
+Select one or more organelle types; the GUI writes a comma-separated `-F`
+value. Plastome and mitogenome databases are installed as a pair. A seed/label
+database must be installed for every non-`anonym` organelle type.
 Check it with `Manage databases…` in the GUI or `getorganelle_config.py --list`.
 
 ## GUI workflow
 
-1. **Inputs** — choose `Reads` or `Assembly graph`, add files, pick the
-   organelle type, and confirm the run folder.
-2. **Parameters** — keep Auto k-mers and the default rounds for a first run;
+1. **Inputs** — choose `Reads` or `Assembly graph`, add files, tick one or
+   more organelle types, and confirm the run folder.
+2. **Preprocess** — optionally enable fastp for adapter auto-detection/custom
+   adapters, quality and length filtering. Trimmed reads and fastp JSON/HTML
+   reports are written under `<workspace>/_workbench/preprocess/<run_id>/`.
+3. **Parameters** — keep Auto k-mers and the default rounds for a first run;
    open Advanced only when the data need it.
-3. **Run** — fix any inline validation message, then press `F5` / Run. The job
-   is non-modal; Cancel stops the whole process tree.
-4. **Results** — inspect sequence and graph files, warnings, and provenance
-   (`run.json`).
+4. **Run** — fix any inline validation message, then press `F5` / Run. The job
+   is non-modal; Cancel stops the whole process tree (fastp and GetOrganelle).
+5. **Results** — inspect sequence and graph files, the fastp before/after read
+   counts, warnings, and provenance (`run.json`).
 
 ## Agent notes
 
@@ -53,6 +59,9 @@ python -m getorganelle_gui.cli run \
 ```
 
 - `source` is `getorganelle`; item type is `sequence` for assembled FASTA.
+- With `--preprocess`, `runs` contains a `fastp-preprocess` run before the
+  `getorganelle-reads` run; `summary.preprocess` has before/after read and base
+  counts; trimmed reads and reports are listed in `artifacts`.
 - `artifacts` contains the graph, table and log paths.
 - `summary` contains mode, organelle, threads, rounds, k-mers, contig count,
   total bp and exit code.
@@ -81,6 +90,7 @@ Stable action ids: `getorganelle.inspect`, `getorganelle.check`,
 
 ## Citation
 
+- fastp: Chen et al. 2018, *Bioinformatics* 34:884–890, doi:10.1093/bioinformatics/btx659
 - GetOrganelle: Jin et al. 2020, *Genome Biology* 21:241,
   doi:10.1186/s13059-020-02154-5
 - SPAdes: Prjibelski et al. 2020, *Current Protocols in Bioinformatics* 70:e102

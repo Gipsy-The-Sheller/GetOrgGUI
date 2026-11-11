@@ -1,17 +1,24 @@
 # GetOrganelle Workbench
 
-A PyQt5 desktop front-end for the native Windows GetOrganelle port, designed
-against the YR-MPE workbench standard (plugin lifecycle, typed results,
-provenance, and the UI audit constraints).
+**Windows-first.** A PyQt5 desktop front-end for the native Windows
+GetOrganelle port, designed against the YR-MPE workbench standard (plugin
+lifecycle, typed results, provenance, and the UI audit constraints). See
+[NOTE.md](NOTE.md) for the concise Windows-first note.
 
 ```
-Inputs → Parameters → Run → Results
+Inputs → Preprocess → Parameters → Run → Results
 ```
 
 ## What it does
 
-- **Inputs** — paired/unpaired FASTQ or an existing GFA/FASTG graph, organelle
-  type, workspace and run folder, with live database status.
+- **Inputs** — paired/unpaired FASTQ or an existing GFA/FASTG graph, one or
+  more organelle types (multi-select → `-F a,b`), workspace and run folder,
+  with live database status.
+- **Preprocess** — optional fastp stage: adapter auto-detection/custom
+  sequences, quality and length filtering, optional front/tail trimming and
+  deduplication. Trimmed reads and fastp JSON/HTML reports live under
+  `<workspace>/_workbench/preprocess/<run_id>/`; Results shows before→after
+  read counts.
 - **Parameters** — 3–5 basic controls; everything else is behind
   **Advanced options**. k-mers can be automatic or a validated custom list.
 - **Run** — the exact command is shown before execution. The job is
@@ -74,6 +81,8 @@ stderr. The exact command, parameters and output paths are also written to
 | Skill document | `skills/getorganelle.md` |
 | Non-modal long tasks, one Cancel, Job Center | `RunPage`, `JobCenter` |
 | Basic/Advanced progressive disclosure | `ParametersPage` |
+| Optional fastp preprocessing with reports | `PreprocessPage`, `preprocess.py` |
+| Multi-organelle `-F` lists | `InputsPage` checkbox grid |
 | Inline validation with what/why/how | `validation.py`, field error labels |
 | Status = icon + text + colour | `Badge`, rail symbols |
 | Empty states with a next action | `EmptyState` |
@@ -93,7 +102,8 @@ gui/
 │  ├─ runner.py          # non-modal QProcess job + streaming logs
 │  ├─ theme.py           # semantic light/dark tokens and QSS
 │  ├─ widgets.py         # Card, Badge, FileInput, LogView, EmptyState
-│  ├─ pages/             # Inputs, Parameters, Run, Results
+│  ├─ preprocess.py      # fastp command builder and report summary
+│  ├─ pages/             # Inputs, Preprocess, Parameters, Run, Results
 │  ├─ main_window.py     # rail + pages + inspector + job center
 │  ├─ settings_dialog.py # paths/runtime/theme/asynchronous dependency check
 │  ├─ database_dialog.py # seed/label database status and installation
@@ -115,4 +125,12 @@ venv\Scripts\python.exe gui\tests\gui_smoke.py
 
 `gui_smoke.py` builds the full window and writes light/dark screenshots to
 `build/`. `gui_run_smoke.py` runs a real GetOrganelle job through the GUI's
-runner (requires the built dependencies and the synthetic test reads).
+runner; `gui_preprocess_smoke.py` runs fastp → GetOrganelle
+(requires the built dependencies and the synthetic test reads).
+
+## Scaling note
+
+The UI was tuned against raxmlGUI 2.0 on a 2560×1600 / 150 % display: body
+13 px, captions 11 px, page titles 20 px, 3–5 px control padding, default
+window 1280×800. If a future display needs different density, change the type
+sizes and paddings only in `theme.py`; layouts use the 8 px grid.

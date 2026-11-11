@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
-from .models import MODE_ASSEMBLY, MODE_DATABASE, RunConfig
+from .models import MODE_ASSEMBLY, MODE_DATABASE, RunConfig, split_organelles
 from .paths import dependency_environment
 from .settings import Settings
 
@@ -158,7 +158,13 @@ def build_plan(config: RunConfig, settings: Settings) -> CommandPlan:
     if config.reduce_coverage.strip():
         argv.extend(["--reduce-reads-for-coverage", config.reduce_coverage.strip()])
     if config.max_extending_len.strip():
-        argv.extend(["--max-extending-len", config.max_extending_len.strip()])
+        max_ext = config.max_extending_len.strip()
+        type_count = len(split_organelles(config.organelle)) or 1
+        if type_count > 1 and "," not in max_ext:
+            # GetOrganelle requires one value per -F type, unless the whole
+            # run uses a single value; expand the GUI single value.
+            max_ext = ",".join([max_ext] * type_count)
+        argv.extend(["--max-extending-len", max_ext])
     if config.prefix.strip():
         argv.extend(["--prefix", config.prefix.strip()])
     if config.seed_file.strip():

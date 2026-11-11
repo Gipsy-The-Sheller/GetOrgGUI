@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QApplication  # noqa: E402
 
 from getorganelle_gui.main_window import MainWindow  # noqa: E402
 from getorganelle_gui.models import MODE_READS, RunConfig  # noqa: E402
-from getorganelle_gui.results import build_run_result  # noqa: E402
+from getorganelle_gui.results import build_run_result, load_run_json  # noqa: E402
 from getorganelle_gui.settings import Settings  # noqa: E402
 
 OUT = Path(__file__).resolve().parents[2] / "build"
@@ -36,6 +36,16 @@ def make_inputs():
 
 
 def make_result(window):
+    real_run = Path(__file__).resolve().parents[2] / "build" / "gui_preprocess_test" / "gui_preprocess" / "run.json"
+    if real_run.is_file():
+        result = load_run_json(str(real_run))
+        window.result = result
+        window.run_page.show_result(result)
+        window.results_page.show_result(result)
+        window.job_center.set_result(result)
+        window._update_rail_status()
+        window.inspector.refresh()
+        return
     config = RunConfig(
         mode=MODE_READS,
         reads_1=str(TEMP / "sample_1.fq"),
@@ -100,7 +110,7 @@ def main():
     settings = Settings.load()
     settings.workspace_root = str(TEMP / "runs")
     window = MainWindow(settings)
-    window.resize(1440, 900)
+    window.resize(1280, 800)
     window.config.reads_1 = str(r1)
     window.config.reads_2 = str(r2)
     window.config.run_name = "sample_embplant_pt"
@@ -109,17 +119,23 @@ def main():
     for _ in range(4):
         app.processEvents()
     render(window, app, "1_inputs")
+    window.config.preprocess = True
+    window.preprocess_page.load_from_config()
+    window.show_page("preprocess")
+    render(window, app, "2_preprocess")
+    window.config.preprocess = False
+    window.preprocess_page.load_from_config()
     window.show_page("parameters")
     window.parameters_page.advanced.setExpanded(True)
-    render(window, app, "2_parameters")
+    render(window, app, "3_parameters")
     make_result(window)
     window.run_page.append_log("Pre-reading fastq ...", "output")
     window.run_page.append_log("Making seed reads ...", "stage")
     window.run_page.append_log("WARNING: Example warning line.", "warning")
     window.show_page("run")
-    render(window, app, "3_run")
+    render(window, app, "4_run")
     window.show_page("results")
-    render(window, app, "4_results")
+    render(window, app, "5_results")
     window.runner.cancel()
     window.close()
     app.processEvents()

@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .models import ORGANELLES
+from .models import organelle_label
 from .widgets import Badge, Separator, human_bp
 
 GETORGANELLE_CITATION = (
@@ -50,7 +50,7 @@ class InspectorPanel(QFrame):
         super().__init__(parent)
         self.wb = workbench
         self.setObjectName("Inspector")
-        self.setFixedWidth(308)
+        self.setFixedWidth(252)
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         scroll = QScrollArea()
@@ -59,8 +59,8 @@ class InspectorPanel(QFrame):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         body = QWidget()
         self.body_layout = QVBoxLayout(body)
-        self.body_layout.setContentsMargins(16, 18, 16, 18)
-        self.body_layout.setSpacing(12)
+        self.body_layout.setContentsMargins(12, 12, 12, 12)
+        self.body_layout.setSpacing(8)
         scroll.setWidget(body)
         outer.addWidget(scroll)
 
@@ -74,6 +74,7 @@ class InspectorPanel(QFrame):
         self.output_row = self._add_row("Output", "")
         self.threads_row = self._add_row("Threads", "")
         self.scheme_row = self._add_row("Extending", "")
+        self.preprocess_row = self._add_row("Preprocess", "")
         self.body_layout.addWidget(Separator())
 
         self._add_section("Toolchain")
@@ -137,9 +138,7 @@ class InspectorPanel(QFrame):
     def refresh(self) -> None:
         config = self.wb.config
         self.mode_row.set_value(config.mode.capitalize())
-        self.organelle_row.set_value(
-            ORGANELLES.get(config.organelle, {}).get("label", config.organelle)
-        )
+        self.organelle_row.set_value(organelle_label(config.organelle))
         self.output_row.set_value(config.output_dir.name)
         self.output_row.right.setToolTip(str(config.output_dir))
         self.threads_row.set_value(str(config.threads))
@@ -149,6 +148,9 @@ class InspectorPanel(QFrame):
             else f"-R {config.rounds} · auto k-mers"
             if config.mode == "reads"
             else "Graph mode"
+        )
+        self.preprocess_row.set_value(
+            "fastp (auto adapter)" if config.preprocess and config.mode == "reads" else "Off"
         )
         deps = self.wb.deps
         self.tool_badge.set_state(

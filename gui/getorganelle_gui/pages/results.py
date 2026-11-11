@@ -19,7 +19,13 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from ..models import ORGANELLES, STATUS_CANCELLED, STATUS_ERROR, STATUS_SUCCESS, STATUS_WARNING
+from ..models import (
+    STATUS_CANCELLED,
+    STATUS_ERROR,
+    STATUS_SUCCESS,
+    STATUS_WARNING,
+    organelle_label,
+)
 from ..widgets import Badge, Card, EmptyState, human_bp, human_size
 from .common import ScrollPage, caption, page_header
 
@@ -57,6 +63,7 @@ class ResultsPage(ScrollPage):
         self.content.hide()
 
         self._build_summary()
+        self._build_preprocess()
         self._build_browser()
         self._build_warnings()
         self._build_provenance()
@@ -90,6 +97,36 @@ class ResultsPage(ScrollPage):
         self.summary_card.body.addLayout(actions)
         self.content_layout.addWidget(self.summary_card)
 
+    def _build_preprocess(self) -> None:
+        self.preprocess_card = Card("Preprocessing (fastp)")
+        self.preprocess_text = caption("")
+        self.preprocess_card.body.addWidget(self.preprocess_text)
+        actions = QHBoxLayout()
+        self.preprocess_html_button = QPushButton("Open HTML report")
+        self.preprocess_html_button.clicked.connect(self._open_preprocess_html)
+        self.preprocess_folder_button = QPushButton("Open preprocessing folder")
+        self.preprocess_folder_button.clicked.connect(self._open_preprocess_folder)
+        actions.addWidget(self.preprocess_html_button)
+        actions.addWidget(self.preprocess_folder_button)
+        actions.addStretch(1)
+        self.preprocess_card.body.addLayout(actions)
+        self.preprocess_card.hide()
+        self.content_layout.addWidget(self.preprocess_card)
+
+    def _open_preprocess_html(self) -> None:
+        if self.result is None:
+            return
+        path = self.result.summary.get("preprocess", {}).get("report_html", "")
+        if path:
+            self.wb.open_path(path)
+
+    def _open_preprocess_folder(self) -> None:
+        if self.result is None:
+            return
+        path = self.result.summary.get("preprocess", {}).get("output_dir", "")
+        if path:
+            self.wb.open_path(path)
+
     def _build_browser(self) -> None:
         splitter = QSplitter(Qt.Horizontal)
         splitter.setChildrenCollapsible(False)
@@ -109,7 +146,7 @@ class ResultsPage(ScrollPage):
         self.table.setTextElideMode(Qt.ElideMiddle)
         self.table.setWordWrap(False)
         self.table.itemSelectionChanged.connect(self._on_selection_changed)
-        self.table.setMinimumHeight(240)
+        self.table.setMinimumHeight(180)
         left.body.addWidget(self.table)
         splitter.addWidget(left)
 
@@ -128,7 +165,7 @@ class ResultsPage(ScrollPage):
         self.preview.setObjectName("Preview")
         self.preview.setReadOnly(True)
         self.preview.setLineWrapMode(QPlainTextEdit.WidgetWidth)
-        self.preview.setMinimumHeight(240)
+        self.preview.setMinimumHeight(180)
         right.body.addWidget(self.preview)
         splitter.addWidget(right)
         splitter.setStretchFactor(0, 3)
@@ -168,11 +205,31 @@ class ResultsPage(ScrollPage):
         self.content.show()
         self.items = list(result.items)
         self.title_label.setText(result.run_name)
+        preprocess = result.summary.get("preprocess") or {}
+        fastp_text = ""
+        if preprocess:
+            fastp_text = (
+                f" · fastp {preprocess.get('before_reads', 0):,} → "
+                f"{preprocess.get('after_reads', 0):,} reads"
+            )
         self.summary_text.setText(
-            f"{ORGANELLES.get(result.organelle, {}).get('label', result.organelle)} · "
+            f"{organelle_label(result.organelle)} · "
             f"{result.mode} · {result.elapsed_s:.1f} s · "
             f"{len(result.sequence_items)} sequence file(s) · {human_bp(result.total_bp)}"
+            + fastp_text
         )
+        self.preprocess_card.setVisible(bool(preprocess))
+        if preprocess:
+            before = int(preprocess.get("before_reads", 0) or 0)
+            after = int(preprocess.get("after_reads", 0) or 0)
+            before_bp = int(preprocess.get("before_bases", 0) or 0)
+            after_bp = int(preprocess.get("after_bases", 0) or 0)
+            self.preprocess_text.setText(
+                f"{preprocess.get('description', 'fastp')} · "
+                f"reads {before:,} → {after:,} · bases {human_bp(before_bp)} → {human_bp(after_bp)}\n"
+                f"Trimmed reads and reports: {preprocess.get('output_dir', '')}"
+            )
+            self.preprocess_html_button.setEnabled(bool(preprocess.get("report_html")))
         state = {
             STATUS_SUCCESS: ("success", "Success"),
             STATUS_WARNING: ("warning", "Completed with warnings"),

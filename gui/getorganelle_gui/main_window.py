@@ -38,6 +38,7 @@ from .models import (
 )
 from .pages.inputs import InputsPage
 from .pages.parameters import ParametersPage
+from .pages.preprocess import PreprocessPage
 from .pages.results import ResultsPage
 from .pages.run import RunPage
 from .paths import (
@@ -54,6 +55,21 @@ from .widgets import LogView, make_icon_button, path_name
 
 INPUT_FIELDS = {"reads_1", "reads_2", "unpaired", "graph", "run_name", "database"}
 OUTPUT_FIELDS = {"output_root", "overwrite"}
+PREPROCESS_FIELDS = {
+    "preprocess",
+    "adapter_mode",
+    "adapter_sequence",
+    "adapter_sequence_r2",
+    "fastp_quality",
+    "fastp_unqualified_percent",
+    "fastp_min_length",
+    "trim_front1",
+    "trim_tail1",
+    "trim_front2",
+    "trim_tail2",
+    "fastp_threads",
+    "fastp_extra_args",
+}
 PARAM_FIELDS = {
     "threads",
     "rounds",
@@ -136,8 +152,8 @@ class MainWindow(QMainWindow):
         self._tokens = apply_theme(QApplication.instance(), self.settings.theme)
 
         self.setWindowTitle(f"{APP_NAME} {__version__}")
-        self.setMinimumSize(1200, 700)
-        self.resize(1440, 900)
+        self.setMinimumSize(1024, 640)
+        self.resize(1280, 800)
         self._build_ui()
 
         self.runner = JobRunner(self)
@@ -169,11 +185,13 @@ class MainWindow(QMainWindow):
         body.addWidget(self._build_rail())
         self.pages = QStackedWidget()
         self.inputs_page = InputsPage(self)
+        self.preprocess_page = PreprocessPage(self)
         self.parameters_page = ParametersPage(self)
         self.run_page = RunPage(self)
         self.results_page = ResultsPage(self)
         for page in (
             self.inputs_page,
+            self.preprocess_page,
             self.parameters_page,
             self.run_page,
             self.results_page,
@@ -207,7 +225,7 @@ class MainWindow(QMainWindow):
     def _build_top_bar(self) -> QWidget:
         bar = QFrame()
         bar.setObjectName("TopBar")
-        bar.setFixedHeight(64)
+        bar.setFixedHeight(48)
         layout = QHBoxLayout(bar)
         layout.setContentsMargins(18, 8, 16, 8)
         layout.setSpacing(12)
@@ -247,10 +265,10 @@ class MainWindow(QMainWindow):
     def _build_rail(self) -> QWidget:
         rail = QFrame()
         rail.setObjectName("Rail")
-        rail.setFixedWidth(252)
+        rail.setFixedWidth(196)
         layout = QVBoxLayout(rail)
-        layout.setContentsMargins(12, 16, 12, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(8, 12, 8, 8)
+        layout.setSpacing(5)
         heading = QLabel("WORKFLOW")
         heading.setObjectName("Caption")
         layout.addWidget(heading)
@@ -259,14 +277,15 @@ class MainWindow(QMainWindow):
         self.rail_buttons = {}
         for key, number, title, subtitle in (
             ("inputs", "1", "Inputs", "Choose data"),
-            ("parameters", "2", "Parameters", "Tune options"),
-            ("run", "3", "Run", "Start and monitor"),
-            ("results", "4", "Results", "Inspect outputs"),
+            ("preprocess", "2", "Preprocess", "fastp trimming"),
+            ("parameters", "3", "Parameters", "Tune options"),
+            ("run", "4", "Run", "Start and monitor"),
+            ("results", "5", "Results", "Inspect outputs"),
         ):
             button = QPushButton(f"  {number}   {title}\n      {subtitle}")
             button.setObjectName("RailButton")
             button.setCheckable(True)
-            button.setMinimumHeight(58)
+            button.setMinimumHeight(42)
             button.setCursor(Qt.PointingHandCursor)
             button.clicked.connect(lambda _checked=False, page=key: self.show_page(page))
             self.rail_group.addButton(button)
@@ -289,7 +308,13 @@ class MainWindow(QMainWindow):
 
     # ------------------------------------------------------------------ state
     def show_page(self, key: str) -> None:
-        index = {"inputs": 0, "parameters": 1, "run": 2, "results": 3}.get(key, 0)
+        index = {
+            "inputs": 0,
+            "preprocess": 1,
+            "parameters": 2,
+            "run": 3,
+            "results": 4,
+        }.get(key, 0)
         if key == "results" and self.result is None:
             self.results_page.clear()
         self.pages.setCurrentIndex(index)
@@ -302,9 +327,11 @@ class MainWindow(QMainWindow):
         if not self._pages_ready:
             return
         self.parameters_page.set_mode(self.config.mode)
+        self.preprocess_page.update_for_mode(self.config.mode)
         self.issues = validate_config(self.config, self.settings, self.deps, self.db_status)
         grouped = issues_by_field(self.issues)
         self.inputs_page.apply_issues(grouped)
+        self.preprocess_page.apply_issues(grouped)
         self.parameters_page.apply_issues(grouped)
         self.parameters_page.update_command_preview()
         self.run_page.refresh_summary(self.issues)
@@ -326,20 +353,23 @@ class MainWindow(QMainWindow):
     def _update_rail_status(self) -> None:
         errors = {issue.field for issue in self.issues if issue.is_error}
         input_ok = not (errors & INPUT_FIELDS)
+        preprocess_ok = not (errors & PREPROCESS_FIELDS)
         param_ok = not (errors & PARAM_FIELDS)
         run_ok = not errors
         results_ok = self.result is not None
         states = {
             "inputs": input_ok,
+            "preprocess": preprocess_ok,
             "parameters": param_ok,
             "run": run_ok,
             "results": results_ok,
         }
         labels = {
             "inputs": ("1", "Inputs", "Choose data"),
-            "parameters": ("2", "Parameters", "Tune options"),
-            "run": ("3", "Run", "Start and monitor"),
-            "results": ("4", "Results", "Inspect outputs"),
+            "preprocess": ("2", "Preprocess", "fastp trimming"),
+            "parameters": ("3", "Parameters", "Tune options"),
+            "run": ("4", "Run", "Start and monitor"),
+            "results": ("5", "Results", "Inspect outputs"),
         }
         for key, ready in states.items():
             number, title, subtitle = labels[key]
@@ -371,6 +401,7 @@ class MainWindow(QMainWindow):
         if self.runner.is_running:
             return
         self.inputs_page.sync_to_config()
+        self.preprocess_page.sync_to_config()
         self.parameters_page.sync_to_config()
         self.on_config_changed()
         if has_errors(self.issues):
@@ -394,7 +425,7 @@ class MainWindow(QMainWindow):
             self.config.overwrite = True
             self.inputs_page.overwrite_check.setChecked(True)
         self.settings.workspace_root = self.config.output_root
-        self.settings.organelle = self.config.organelle
+        self.settings.organelle = (self.config.organelle.split(",") or ["embplant_pt"])[0]
         self.settings.threads = self.config.threads
         self.settings.keep_temp = self.config.keep_temp
         for path in (
@@ -424,8 +455,10 @@ class MainWindow(QMainWindow):
 
     def _set_editing_enabled(self, enabled: bool) -> None:
         self.inputs_page.setEnabled(enabled)
+        self.preprocess_page.setEnabled(enabled)
         self.parameters_page.setEnabled(enabled)
         self.rail_buttons["inputs"].setEnabled(enabled)
+        self.rail_buttons["preprocess"].setEnabled(enabled)
         self.rail_buttons["parameters"].setEnabled(enabled)
 
     def cancel_run(self) -> None:
@@ -533,6 +566,7 @@ class MainWindow(QMainWindow):
         self.config.threads = self.settings.threads
         self.inputs_page.workspace_input.setText(self.settings.workspace_root)
         self.inputs_page.refresh_databases()
+        self.preprocess_page.update_availability()
         self._tokens = apply_theme(QApplication.instance(), self.settings.theme)
         self.theme_button.setText("☀" if self.settings.theme == "dark" else "☾")
         self._apply_log_tokens()

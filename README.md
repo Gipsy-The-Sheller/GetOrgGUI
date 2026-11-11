@@ -14,6 +14,7 @@ Windows x86_64 与 Windows arm64 两个版本。
 | GetOrganelle | 1.8.0.1 | 纯 Python（含 Windows 补丁） |
 | SPAdes | 4.3.0-dev | MinGW-w64 原生构建 |
 | Bowtie2 | 2.5.5 | MinGW-w64 原生构建，静态运行时 |
+| fastp | 1.0.1 | MinGW-w64 原生构建，静态链接（可选预处理） |
 | samtools / htslib | 1.25 | MinGW-w64 原生构建，静态链接 |
 | NCBI BLAST+ | 2.17.0 | 官方 Windows x64 二进制 |
 | Python | 3.10+ | numpy / gekko / requests |
@@ -33,6 +34,7 @@ Windows x86_64 与 Windows arm64 两个版本。
 ├─ vendor/
 │  ├─ spades/             已打补丁的 SPAdes 源代码快照
 │  ├─ bowtie2/            Bowtie2 2.5.5 源码（含包装器补丁）
+│  ├─ fastp/              fastp 1.0.1 源码（含 MinGW 兼容补丁）
 │  └─ samtools/           samtools 1.25 + htslib 源码
 ├─ gui/                   PyQt5 桌面 GUI（YR-MPE 风格）与 headless CLI
 ├─ packaging/             最终用户发行包所需的启动器与说明
@@ -59,7 +61,7 @@ pacman -S --needed \
   mingw-w64-x86_64-pkgconf zip
 
 export TARGET_ARCH=x86_64
-./scripts/build_all.sh     # SPAdes + Bowtie2 + samtools + BLAST+
+./scripts/build_all.sh     # SPAdes + fastp + Bowtie2 + samtools + BLAST+
 ./scripts/package.sh       # 生成 build/ci-x64/GetOrganelle-Windows-x64-*.zip
 ```
 
@@ -90,9 +92,10 @@ arm64 构建在 Windows 11 ARM64 的 MSYS2 `CLANGARM64` shell 中进行，设置
 ### 桌面 GUI
 
 双击 `GetOrganelleGUI.bat` 启动 **GetOrganelle Workbench**（Inputs →
-Parameters → Run → Results）。它按 YR-MPE 的插件契约与 UI 审计实现：参数
-Basic/Advanced 分层、内联校验、非模态后台任务、Job Center、结果预览、
-`run.json` 溯源、数据库管理与浅/深色主题。详见 `gui/README.md`。
+Preprocess → Parameters → Run → Results）。它按 YR-MPE 的插件契约与 UI
+审计实现：多细胞器类型、可选 fastp 接头裁剪/过滤、参数 Basic/Advanced
+分层、内联校验、非模态后台任务、Job Center、结果预览、`run.json` 溯源、
+数据库管理与浅/深色主题。详见 `gui/README.md` 与 `gui/NOTE.md`（Windows-first）。
 
 同一套模型还提供 headless / agent 接口：
 

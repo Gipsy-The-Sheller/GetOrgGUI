@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from .command import protected_flags_in_extra, split_extra_args
+from .preprocess import ADAPTER_MODES
 from .models import (
     ANONYM,
     MODE_ASSEMBLY,
@@ -22,6 +23,7 @@ from .models import (
     RunConfig,
     ValidationIssue,
     slugify,
+    split_organelles,
 )
 from .settings import Settings
 
@@ -288,19 +290,34 @@ def _check_numeric(issues: List[ValidationIssue], config: RunConfig) -> None:
                         )
                     )
         max_ext = config.max_extending_len.strip().lower()
-        if max_ext and max_ext not in ("inf", "auto"):
-            try:
-                if float(max_ext) < 0:
-                    raise ValueError
-            except ValueError:
+        if max_ext:
+            tokens = [token.strip() for token in max_ext.split(",") if token.strip()]
+            type_count = len(split_organelles(config.organelle)) or 1
+            if len(tokens) not in (1, type_count):
                 issues.append(
                     ValidationIssue(
                         "error",
                         "max_extending_len",
-                        "Maximum extending length must be a non-negative number, “inf” or “auto”.",
-                        "Use inf for seed loci that do not cover the whole genome.",
+                        f"{type_count} organelle types need one value or {type_count} comma-separated values.",
+                        "Use a single value (applied to every type) or one value per type, e.g. inf,inf.",
                     )
                 )
+            for token in tokens:
+                if token in ("inf", "auto"):
+                    continue
+                try:
+                    if float(token) < 0:
+                        raise ValueError
+                except ValueError:
+                    issues.append(
+                        ValidationIssue(
+                            "error",
+                            "max_extending_len",
+                            "Maximum extending length must be a non-negative number, “inf” or “auto”.",
+                            "Use inf for seed loci that do not cover the whole genome.",
+                        )
+                    )
+                    break
     else:
         min_depth = config.min_depth.strip().lower() or "0"
         max_depth = config.max_depth.strip().lower() or "inf"
@@ -390,12 +407,20 @@ def _check_inputs(issues: List[ValidationIssue], config: RunConfig) -> None:
                 )
 
 
+def _split_values(value: str) -> List[str]:
+    return [part.strip() for part in (value or "").split(",") if part.strip()]
+
+
 def _check_optional_files(issues: List[ValidationIssue], config: RunConfig) -> None:
-    if config.seed_file.strip():
-        _check_file(issues, "seed_file", "Seed file", config.seed_file)
-    if config.genes_db.strip():
-        _check_file(issues, "genes_db", "Gene database", config.genes_db)
-    if config.organelle == ANONYM and config.mode != MODE_DATABASE:
+    seed_parts = _split_values(config.seed_file)
+    gene_parts = _split_values(config.genes_db)
+    for index, part in enumerate(seed_parts, start=1):
+        label = "Seed file" if len(seed_parts) == 1 else f"Seed file {index}"
+        _check_file(issues, "seed_file", label, part)
+    for index, part in enumerate(gene_parts, start=1):
+        label = "Gene database" if len(gene_parts) == 1 else f"Gene database {index}"
+        _check_file(issues, "genes_db", label, part)
+    if ANONYM in split_organelles(config.organelle) and config.mode != MODE_DATABASE:
         if not config.seed_file.strip():
             issues.append(
                 ValidationIssue(
@@ -436,6 +461,166 @@ def _check_optional_files(issues: List[ValidationIssue], config: RunConfig) -> N
             )
 
 
+def _check_preprocess(
+    issues: List[ValidationIssue], config: RunConfig, deps: Optional[DependencyReport]
+) -> None:
+    if not config.preprocess:
+        return
+    if config.mode != MODE_READS:
+        issues.append(
+            ValidationIssue(
+                "error",
+                "preprocess",
+                "Read preprocessing is only available in reads mode.",
+                "Clear the fastp option or choose reads mode.",
+            )
+        )
+        return
+    if deps is not None:
+        fastp = deps.tools.get("fastp")
+        if fastp is None or not fastp.ok:
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    "preprocess",
+                    "fastp is not available in GetOrganelleDep/Windows/fastp.",
+                    "Rebuild the package with fastp, or disable preprocessing.",
+                )
+            )
+    mode = (config.adapter_mode or "auto").lower()
+    if mode not in ADAPTER_MODES:
+        issues.append(
+            ValidationIssue(
+                "error",
+                "adapter_mode",
+                "Unknown adapter mode.",
+                "Choose Auto-detect, Disable adapter trimming, or Custom sequence.",
+            )
+        )
+    if mode == "custom":
+        sequence = config.adapter_sequence.strip().upper()
+        if not sequence:
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    "adapter_sequence",
+                    "A custom adapter sequence is required.",
+                    "Paste the R1 adapter, or switch to Auto-detect.",
+                )
+            )
+        elif len(sequence) < 5 or any(base not in "ACGTN" for base in sequence):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    "adapter_sequence",
+                    "Adapter sequence must be at least 5 bases of A/C/G/T/N.",
+                    "Paste the adapter in 5'→3' orientation as provided by the vendor.",
+                )
+            )
+        r2_sequence = config.adapter_sequence_r2.strip().upper()
+        if r2_sequence and any(base not in "ACGTN" for base in r2_sequence):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    "adapter_sequence_r2",
+                    "R2 adapter sequence contains invalid characters.",
+                    "Use only A/C/G/T/N, or leave it empty to reuse the R1 adapter.",
+                )
+            )
+    for field_name, value, low, high, label in (
+        ("fastp_quality", config.fastp_quality, 0, 40, "Qualified quality phred"),
+        ("fastp_unqualified_percent", config.fastp_unqualified_percent, 0, 100, "Unqualified percent"),
+        ("fastp_min_length", config.fastp_min_length, 0, 10000, "Minimum read length"),
+        ("trim_front1", config.trim_front1, 0, 10000, "Trim front R1"),
+        ("trim_tail1", config.trim_tail1, 0, 10000, "Trim tail R1"),
+        ("trim_front2", config.trim_front2, 0, 10000, "Trim front R2"),
+        ("trim_tail2", config.trim_tail2, 0, 10000, "Trim tail R2"),
+        ("fastp_threads", config.fastp_threads, 0, 256, "fastp threads"),
+    ):
+        if not low <= int(value) <= high:
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    field_name,
+                    f"{label} must be between {low} and {high}.",
+                    "Use the default unless you have a specific reason to change it.",
+                )
+            )
+    tokens = split_extra_args(config.fastp_extra_args)
+    fastp_protected = {"-i", "-I", "-o", "-O", "-j", "-h", "-w", "--thread", "--json", "--html"}
+    fastp_conflicts = {
+        token.split("=", 1)[0] for token in tokens if token.split("=", 1)[0] in fastp_protected
+    }
+    conflicts = sorted(fastp_conflicts | set(protected_flags_in_extra(config.fastp_extra_args)))
+    if conflicts:
+        issues.append(
+            ValidationIssue(
+                "error",
+                "fastp_extra_args",
+                "fastp extra options must not set inputs, outputs, reports or threads: "
+                + ", ".join(conflicts),
+                "Use the dedicated fastp controls above.",
+            )
+        )
+
+
+def _check_organelle_selection(issues: List[ValidationIssue], config: RunConfig) -> None:
+    types = split_organelles(config.organelle)
+    if not types:
+        issues.append(
+            ValidationIssue(
+                "error",
+                "organelle",
+                "Select at least one organelle type.",
+                "Use the checkbox list on the Inputs page.",
+            )
+        )
+        return
+    unknown = [item for item in types if item not in ORGANELLES]
+    if unknown:
+        issues.append(
+            ValidationIssue(
+                "error",
+                "organelle",
+                "Unknown organelle type: " + ", ".join(unknown),
+                "Use one or more of: " + ", ".join(ORGANELLES) + ".",
+            )
+        )
+        return
+    if ANONYM in types and len(types) > 1:
+        issues.append(
+            ValidationIssue(
+                "error",
+                "organelle",
+                "“Unknown organelle” must be run alone.",
+                "Clear the other types, or choose a known organelle type instead.",
+            )
+        )
+    if config.mode == MODE_DATABASE:
+        return
+    if len(types) > 1:
+        seed_parts = _split_values(config.seed_file)
+        if seed_parts and len(seed_parts) != len(types):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    "seed_file",
+                    f"{len(types)} organelle types need {len(types)} comma-separated seed files.",
+                    "Provide one FASTA per type in the same order as -F, or clear the field to use the default database.",
+                )
+            )
+        gene_parts = _split_values(config.genes_db)
+        if gene_parts and len(gene_parts) != len(types):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    "genes_db",
+                    f"{len(types)} organelle types need {len(types)} comma-separated gene databases.",
+                    "Provide one value per type in the same order as -F, or clear the field to use the default database.",
+                )
+            )
+
+
 def validate_config(
     config: RunConfig,
     settings: Settings,
@@ -448,7 +633,9 @@ def validate_config(
             ValidationIssue("error", "mode", "Unknown run mode.", "Choose Reads or Assembly graph.")
         )
     _check_inputs(issues, config)
+    _check_preprocess(issues, config, deps)
     if config.mode != MODE_DATABASE:
+        _check_organelle_selection(issues, config)
         _check_named_run(issues, config)
         _check_output_dir(issues, config)
         _check_numeric(issues, config)
@@ -477,19 +664,25 @@ def validate_config(
                 )
             )
 
-    if (
-        db_status is not None
-        and config.mode != MODE_DATABASE
-        and config.organelle != ANONYM
-    ):
-        status = db_status.get(config.organelle)
-        if status is not None and not status.ready:
+    if db_status is not None and config.mode != MODE_DATABASE:
+        selected = split_organelles(config.organelle)
+        required = {item for item in selected if item != ANONYM}
+        pair_note = ""
+        if "embplant_pt" in selected or "embplant_mt" in selected:
+            required.update({"embplant_pt", "embplant_mt"})
+            pair_note = " (plastome and mitogenome databases are installed as a pair)"
+        missing = []
+        for key in sorted(required):
+            status = db_status.get(key)
+            if status is None or not status.ready:
+                missing.append(ORGANELLES.get(key, {}).get("label", key))
+        if missing:
             issues.append(
                 ValidationIssue(
                     "error",
                     "database",
-                    f"The {status.label} database is not installed.",
-                    "Open “Manage databases” on the Inputs page and install the seed/label database.",
+                    "Missing seed/label database: " + ", ".join(missing) + pair_note,
+                    "Open “Manage databases” on the Inputs page and install the selected organelle types.",
                 )
             )
     return issues

@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from ..models import DEFAULT_KMERS, MODE_ASSEMBLY, ORGANELLES
+from ..models import DEFAULT_KMERS, MODE_ASSEMBLY, organelle_default_rounds
 from ..widgets import Card, CollapsibleSection, FileInput
 from .common import ScrollPage, hint, page_header
 
@@ -45,7 +45,7 @@ class ParametersPage(ScrollPage):
 
         footer = QHBoxLayout()
         back = QPushButton("←  Back to inputs")
-        back.clicked.connect(lambda: self.wb.show_page("inputs"))
+        back.clicked.connect(lambda: self.wb.show_page("preprocess"))
         footer.addWidget(back)
         footer.addStretch(1)
         self.continue_button = QPushButton("Continue to run  →")
@@ -62,7 +62,7 @@ class ParametersPage(ScrollPage):
     def _build_basic_card(self) -> None:
         self.basic_card = Card("Basic parameters", "Safe defaults are selected; change them if your data needs it.")
         form = QFormLayout()
-        form.setSpacing(12)
+        form.setSpacing(8)
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
 
         self.threads_spin = QSpinBox()
@@ -335,14 +335,12 @@ class ParametersPage(ScrollPage):
     def update_for_organelle(self, organelle: str) -> None:
         if self._rounds_manual:
             return
-        meta = ORGANELLES.get(organelle, {})
-        if "rounds" in meta:
-            self._setting_rounds = True
-            self.rounds_spin.setValue(int(meta["rounds"]))
-            self._setting_rounds = False
-            self.sync_to_config()
-            self.update_command_preview()
-            self.wb.on_config_changed()
+        self._setting_rounds = True
+        self.rounds_spin.setValue(organelle_default_rounds(organelle))
+        self._setting_rounds = False
+        self.sync_to_config()
+        self.update_command_preview()
+        self.wb.on_config_changed()
 
     def update_command_preview(self) -> None:
         self.command_preview.setPlainText(self.wb.command_display())

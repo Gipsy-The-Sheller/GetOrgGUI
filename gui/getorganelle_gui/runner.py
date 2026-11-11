@@ -1,6 +1,12 @@
-"""Background job execution with streaming logs and one Cancel action."""
+"""Background job execution with streaming logs and one Cancel action.
+
+A job is a short pipeline: an optional fastp preprocessing stage (one command
+per input file group) followed by GetOrganelle.  Logs, stage progress and
+cancel apply to the whole pipeline.
+"""
 from __future__ import annotations
 
+import copy
 import os
 import re
 import subprocess
@@ -22,6 +28,7 @@ from .models import (
     now_iso,
     slugify,
 )
+from .preprocess import PreprocessPlan, build_preprocess_plan, summarize_fastp
 from .results import build_run_result, write_run_json
 from .settings import Settings
 
@@ -54,7 +61,7 @@ _WARNING_PATTERN = re.compile(r"\bWARNING\b", re.I)
 
 
 class JobRunner(QObject):
-    """Owns one GetOrganelle process.
+    """Owns one fastp → GetOrganelle pipeline.
 
     The runner never touches widgets.  It emits plain text and a final
     :class:`RunResult`, which is the same object the CLI writes to JSON.
@@ -72,6 +79,12 @@ class JobRunner(QObject):
         super().__init__(parent)
         self.process: Optional[QProcess] = None
         self.plan: Optional[CommandPlan] = None
+        self._plans: List[CommandPlan] = []
+        self._plan_labels: List[str] = []
+        self._plan_index = 0
+        self._main_plan: Optional[CommandPlan] = None
+        self._preprocess: Optional[PreprocessPlan] = None
+        self._preprocess_dir = ""
         self.config: Optional[RunConfig] = None
         self.settings: Optional[Settings] = None
         self.run_id = ""
@@ -94,7 +107,9 @@ class JobRunner(QObject):
     # ------------------------------------------------------------------ state
     @property
     def is_running(self) -> bool:
-        return bool(self.process and self.process.state() != QProcess.NotRunning)
+        if self.process is not None and self.process.state() != QProcess.NotRunning:
+            return True
+        return bool(self._plans and not self._finished and self._log_handle is not None)
 
     @property
     def stage_index(self) -> int:
@@ -107,6 +122,10 @@ class JobRunner(QObject):
     @property
     def elapsed_seconds(self) -> float:
         return self._elapsed.elapsed() / 1000.0 if self._elapsed.isValid() else 0.0
+
+    @property
+    def preprocess_enabled(self) -> bool:
+        return self._preprocess is not None and self._preprocess.enabled
 
     def _set_state(self, state: str) -> None:
         self.state_changed.emit(state)
@@ -124,15 +143,17 @@ class JobRunner(QObject):
         self.config = config
         self.settings = settings
         self._tool_version = tool_version
-        self.plan = plan or build_plan(config, settings)
         self._cancelled = False
         self._finished = False
         self._buffer = b""
         self._lines.clear()
         self._stage_index = 0
         self._stage_label = ""
-        stage_table = STAGE_TABLE.get(config.mode, STAGE_TABLE[MODE_READS])
-        self._stage_total = len(stage_table)
+        self._preprocess = None
+        self._preprocess_dir = ""
+        self._plans = []
+        self._plan_labels = []
+        self._plan_index = 0
 
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         self.run_id = f"{stamp}_{slugify(config.run_name)}"
@@ -144,24 +165,40 @@ class JobRunner(QObject):
         self.log_path = str(log_root / f"{self.run_id}.log")
         self._log_handle = open(self.log_path, "w", encoding="utf-8", errors="replace")
         self._started_at = now_iso()
+
+        effective_config = config
+        if config.preprocess and config.mode == MODE_READS and plan is None:
+            preprocess_dir = (
+                Path(settings.workspace_root) / "_workbench" / "preprocess" / self.run_id
+            )
+            preprocess_dir.mkdir(parents=True, exist_ok=True)
+            pre = build_preprocess_plan(config, settings, preprocess_dir)
+            if pre.enabled:
+                self._preprocess = pre
+                self._preprocess_dir = str(preprocess_dir)
+                effective_config = copy.deepcopy(config)
+                effective_config.preprocess = False
+                effective_config.reads_1 = pre.reads_1
+                effective_config.reads_2 = pre.reads_2
+                effective_config.unpaired = pre.unpaired
+                self._plans.extend(pre.commands)
+                self._plan_labels.extend(pre.labels)
+
+        main_plan = plan or build_plan(effective_config, settings)
+        self._main_plan = main_plan
+        self._plans.append(main_plan)
+        self._plan_labels.append("GetOrganelle")
+        self.plan = main_plan
+
+        stage_table = STAGE_TABLE.get(config.mode, STAGE_TABLE[MODE_READS])
+        self._stage_total = len(self._plans) - 1 + len(stage_table)
         self._write_header()
 
-        environment = QProcessEnvironment()
-        for key, value in self.plan.env.items():
-            environment.insert(str(key), str(value))
-        self.process = QProcess(self)
-        self.process.setProcessChannelMode(QProcess.MergedChannels)
-        self.process.setWorkingDirectory(self.plan.cwd)
-        self.process.setProcessEnvironment(environment)
-        self.process.readyReadStandardOutput.connect(self._read_output)
-        self.process.finished.connect(self._process_finished)
-        self.process.errorOccurred.connect(self._process_error)
         self._elapsed.start()
         self._tick_timer.start()
         self._set_state("running")
-        self.stage_changed.emit(0, self._stage_total, "Starting")
         self.started.emit()
-        self.process.start(self.plan.program, self.plan.arguments)
+        self._start_plan(0)
         return True
 
     def _write_header(self) -> None:
@@ -172,12 +209,48 @@ class JobRunner(QObject):
             f"# started: {self._started_at}",
             f"# mode: {self.config.mode}",
             f"# organelle: {self.config.organelle}",
-            f"# command: {self.plan.display}",
-            "",
+            f"# stages: {len(self._plans)}",
         ]
+        for index, plan in enumerate(self._plans):
+            header.append(f"# command {index + 1}: {plan.display}")
+        header.append("")
         self._log_handle.write("\n".join(header) + "\n")
         self._log_handle.flush()
-        self.log_line.emit("Command: " + self.plan.display, "command")
+
+    # ------------------------------------------------------------------ plans
+    def _start_plan(self, index: int) -> None:
+        self._plan_index = index
+        self.plan = self._plans[index]
+        self._buffer = b""
+        pre_count = len(self._plans) - 1
+        if index < pre_count:
+            stage = index + 1
+            label = self._plan_labels[index]
+        else:
+            stage = pre_count
+            label = "Starting GetOrganelle"
+        self._stage_index = max(self._stage_index, stage)
+        self._stage_label = label
+        self.stage_changed.emit(stage, self._stage_total, label)
+        self.log_line.emit(
+            f"Command {index + 1}/{len(self._plans)}: {self.plan.display}", "command"
+        )
+        if self._log_handle is not None:
+            self._log_handle.write(f"\n# command {index + 1}: {self.plan.display}\n")
+            self._log_handle.flush()
+
+        environment = QProcessEnvironment()
+        for key, value in self.plan.env.items():
+            environment.insert(str(key), str(value))
+        process = QProcess(self)
+        self.process = process
+        process.setProcessChannelMode(QProcess.MergedChannels)
+        process.setWorkingDirectory(self.plan.cwd)
+        process.setProcessEnvironment(environment)
+        process.readyReadStandardOutput.connect(self._read_output)
+        process.finished.connect(self._process_finished)
+        process.errorOccurred.connect(self._process_error)
+        process.start(self.plan.program, self.plan.arguments)
 
     # ------------------------------------------------------------------ output
     def _read_output(self) -> None:
@@ -205,7 +278,7 @@ class JobRunner(QObject):
     def _classify(text: str) -> str:
         if not text.strip():
             return "output"
-        if "Command:" in text and text.startswith("Command:"):
+        if text.startswith("Command "):
             return "command"
         if _WARNING_PATTERN.search(text):
             return "warning"
@@ -214,15 +287,19 @@ class JobRunner(QObject):
         return "output"
 
     def _detect_stage(self, text: str) -> None:
-        if self.config is None:
+        if self.config is None or not self._plans:
+            return
+        if self._plan_index != len(self._plans) - 1:
             return
         table = STAGE_TABLE.get(self.config.mode, STAGE_TABLE[MODE_READS])
+        offset = len(self._plans) - 1
         for index, (pattern, label) in enumerate(table, start=1):
             if re.search(pattern, text, re.I):
-                if index > self._stage_index:
-                    self._stage_index = index
+                global_index = offset + index
+                if global_index > self._stage_index:
+                    self._stage_index = global_index
                     self._stage_label = label
-                    self.stage_changed.emit(index, self._stage_total, label)
+                    self.stage_changed.emit(global_index, self._stage_total, label)
                 break
 
     def _emit_tick(self) -> None:
@@ -246,12 +323,12 @@ class JobRunner(QObject):
                 )
             except OSError:
                 self.process.kill()
-        else:
+        elif self.process is not None:
             self.process.terminate()
         QTimer.singleShot(4000, self._force_kill)
 
     def _force_kill(self) -> None:
-        if self.process is not None and self.is_running:
+        if self.process is not None and self.process.state() != QProcess.NotRunning:
             self.process.kill()
 
     # ---------------------------------------------------------------- finish
@@ -268,6 +345,18 @@ class JobRunner(QObject):
             self._append_log(self._buffer.decode("utf-8", errors="replace").rstrip("\r"), None)
             self._buffer = b""
         crashed = exit_status == QProcess.CrashExit
+        if (
+            not self._cancelled
+            and exit_code == 0
+            and not crashed
+            and self._plan_index + 1 < len(self._plans)
+        ):
+            old = self.process
+            self.process = None
+            if old is not None:
+                old.deleteLater()
+            self._start_plan(self._plan_index + 1)
+            return
         self._finalize(exit_code, crashed=crashed)
 
     def _finalize(self, exit_code: int, start_error: bool = False, crashed: bool = False) -> None:
@@ -275,10 +364,7 @@ class JobRunner(QObject):
             return
         self._finished = True
         self._tick_timer.stop()
-        if self._elapsed.isValid():
-            elapsed = self._elapsed.elapsed() / 1000.0
-        else:
-            elapsed = 0.0
+        elapsed = self._elapsed.elapsed() / 1000.0 if self._elapsed.isValid() else 0.0
         if self._log_handle is not None:
             self._log_handle.write(f"\n# finished: {now_iso()}\n# exit_code: {exit_code}\n")
             self._log_handle.flush()
@@ -296,11 +382,27 @@ class JobRunner(QObject):
             elapsed_s=elapsed,
             cancelled=self._cancelled,
         )
-        if self.plan is not None:
-            result.command = list(self.plan.argv)
-            result.summary["command"] = list(self.plan.argv)
-            result.summary["cwd"] = self.plan.cwd
-            result.summary["log_path"] = self.log_path
+        commands = [list(item.argv) for item in self._plans]
+        result.summary["commands"] = commands
+        result.summary["cwd"] = self._main_plan.cwd if self._main_plan else ""
+        result.summary["log_path"] = self.log_path
+        if self._main_plan is not None:
+            result.command = list(self._main_plan.argv)
+            result.summary["command"] = list(self._main_plan.argv)
+        if self.preprocess_enabled:
+            summary = summarize_fastp(self._preprocess.report_jsons)
+            summary.update(
+                {
+                    "description": self._preprocess.description,
+                    "output_dir": self._preprocess_dir,
+                    "commands": [list(item.argv) for item in self._preprocess.commands],
+                    "report_html": self._preprocess.report_html,
+                }
+            )
+            result.summary["preprocess"] = summary
+            for artifact in self._preprocess.artifacts:
+                if artifact not in result.artifacts:
+                    result.artifacts.append(artifact)
         try:
             write_run_json(result)
         except OSError as exc:

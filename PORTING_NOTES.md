@@ -136,10 +136,16 @@ run_get_organelle_assembly.bat -a assembly.fasta -F embplant_pt -o out -t 8
 
 ## 桌面 GUI（GetOrganelle Workbench）
 
-`gui/` 提供按 YR-MPE 标准实现的 PyQt5 工作台：
+`gui/` 提供按 YR-MPE 标准实现的 PyQt5 工作台（**Windows-first**，见
+`gui/NOTE.md`）：
 
-- 工作流 `Inputs → Parameters → Run → Results`，左侧 workflow rail、右侧
-  inspector、底部 Job Center；
+- 工作流 `Inputs → Preprocess → Parameters → Run → Results`，左侧 workflow
+  rail、右侧 inspector、底部 Job Center；
+- 细胞器类型支持多选，输出 `-F embplant_pt,embplant_mt`；plastome/mitogenome
+  数据库按 GetOrganelle 规则成对校验；
+- 可选 fastp 预处理：接头自动检测/自定义、质量/长度过滤、去重、首尾裁剪；
+  fastp JSON/HTML 报告与 trimmed reads 写入 workspace 的 `_workbench` 目录；
+- 界面密度以 raxmlGUI 2.0 为参考：正文 13 px、caption 11 px、默认 1280×800；
 - 参数 Basic/Advanced 分层、内联校验、命令行预览；
 - 非模态 QProcess 任务、实时日志、单一 Cancel（Windows 下 `taskkill /T /F`
   终止整棵进程树）、结果横幅与空状态；
@@ -160,10 +166,24 @@ GUI 使用 PyQt5（与 YR-MPE 一致），因此只有 x64 轮子；arm64 包保
 | 完整 GetOrganelle reads 流程（embplant_pt，`-k 21,45,65 -R 1`） | 通过（exit 0，日志 0 条 ERROR），输出 6 scaffolds |
 | GetOrganelle assembly 流程（`-g` GFA 输入） | 通过（exit 0），输出 6 scaffolds |
 | GUI 驱动完整 reads 流程（JobRunner/QProcess） | 通过（status success，6 scaffolds，12,695 bp，run.json 写入） |
-| GUI headless CLI `inspect` / `check` / `run --json` | 通过；输出 `yrmpe.result.v1` |
+| GUI 驱动 fastp → GetOrganelle 完整流水线 | 通过（fastp 40,000 → 40,000 reads，随后 6 scaffolds，exit 0） |
+| GUI multi-organelle 选择（`embplant_pt,embplant_mt`） | 通过；`-F` 列表、默认 -R 30、数据库成对校验 |
+| GUI headless CLI `inspect` / `check` / `run --json` | 通过；输出 `yrmpe.result.v1`；`--preprocess` 时含 `fastp-preprocess` + `getorganelle-reads` 两个 RunSpec |
 | GUI 单元测试（command/validation/results）与离屏 smoke | 通过 |
 | `spades-core.exe` DLL 依赖 | 仅 KERNEL32/dbghelp/msvcrt + 随附的 libgcc/libstdc++/libgomp/libwinpthread，**无 msys-2.0.dll** |
 | `bowtie2-align-s.exe` / `samtools.exe` DLL 依赖 | 仅系统 DLL，**无 msys-2.0.dll** |
+
+## fastp（预处理阶段）
+
+- 源码来自 `E:/Codes/Fastp`，以 `vendor/fastp` 快照纳入仓库；版本 1.0.1。
+- MinGW 兼容补丁：
+  - `src/unistd.h`：`ssize_t/off_t/pid_t/uid_t/gid_t/useconds_t` 的 typedef 仅在
+    `_MSC_VER` 下定义，避免与 mingw-w64 冲突；
+  - `src/cxxabi.cpp`：MinGW 下用 `snprintf` 兼容 `strcpy_s`。
+- `scripts/build_fastp.sh` 用 Makefile 静态链接 isa-l/libdeflate；产物仅依赖
+  系统 DLL（无 msys-2.0.dll）。
+- GetOrganelle 输出目录不会在运行前创建，日志写到
+  `<workspace>/_workbench/logs/`；这避免 `--overwrite` 删除输出目录时被占用。
 
 ## 已知限制
 

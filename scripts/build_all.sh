@@ -13,6 +13,7 @@ fi
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 "$ROOT/scripts/build_spades.sh"
+"$ROOT/scripts/build_fastp.sh"
 "$ROOT/scripts/build_bowtie2.sh"
 "$ROOT/scripts/build_samtools.sh"
 "$ROOT/scripts/fetch_blast.sh"

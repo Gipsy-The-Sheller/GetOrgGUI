@@ -21,9 +21,12 @@ def main(argv=None) -> int:
     app.setApplicationDisplayName(APP_NAME)
     app.setOrganizationName("GetOrganelle")
     app.setApplicationVersion(__version__)
-    icon = Path(__file__).resolve().parent / "icons" / "workbench.svg"
-    if icon.is_file():
-        app.setWindowIcon(QIcon(str(icon)))
+    icon_dir = Path(__file__).resolve().parent / "icons"
+    for icon_name in ("getorg.svg", "workbench.svg"):
+        icon = icon_dir / icon_name
+        if icon.is_file():
+            app.setWindowIcon(QIcon(str(icon)))
+            break
     window = MainWindow(Settings.load())
     window.show()
     return app.exec_()
