@@ -73,6 +73,19 @@ ORGANELLES: Dict[str, Dict[str, Any]] = {
     },
 }
 
+# GetOrganelleDB ships seed/label FASTA files for these types.  ``anonym`` is
+# intentionally excluded: it is configured with a custom seed and gene FASTA,
+# not a downloadable database.
+DATABASE_TYPES = (
+    "embplant_pt",
+    "embplant_mt",
+    "embplant_nr",
+    "fungus_mt",
+    "fungus_nr",
+    "animal_mt",
+    "other_pt",
+)
+
 ANONYM = "anonym"
 DEFAULT_KMERS = "21,45,65,85,105"
 STATUS_SUCCESS = "success"
@@ -170,6 +183,7 @@ class RunConfig:
     config_dir: str = ""
     extra_args: str = ""
     database_types: str = ""
+    database_action: str = "install"  # install | update | remove
     preprocess: bool = False
     adapter_mode: str = "auto"  # auto | none | custom
     adapter_sequence: str = ""

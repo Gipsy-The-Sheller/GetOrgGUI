@@ -82,8 +82,15 @@ def build_plan(config: RunConfig, settings: Settings) -> CommandPlan:
 
     if config.mode == MODE_DATABASE:
         script = root / "Utilities" / "get_organelle_config.py"
-        database_types = config.database_types.strip() or config.organelle
-        argv = [python, "-u", str(script), "-a", database_types]
+        action = config.database_action or "install"
+        argv = [python, "-u", str(script)]
+        if action == "update":
+            # GetOrganelle's --update refreshes every installed database.
+            argv.append("--update")
+        else:
+            flag = "-r" if action == "remove" else "-a"
+            database_types = config.database_types.strip() or config.organelle
+            argv.extend([flag, database_types])
         if config.config_dir.strip():
             argv.extend(["--config-dir", config.config_dir.strip()])
         argv.extend(extra)

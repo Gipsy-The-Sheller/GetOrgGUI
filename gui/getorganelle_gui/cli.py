@@ -95,6 +95,7 @@ def _config_from_args(args, settings: Settings) -> RunConfig:
         config_dir=settings.config_dir,
         extra_args=args.extra,
         database_types=database_types,
+        database_action=getattr(args, "database_action", "install"),
         preprocess=args.preprocess,
         adapter_mode=args.adapter_mode,
         adapter_sequence=args.adapter_sequence,
@@ -332,7 +333,17 @@ def build_parser() -> argparse.ArgumentParser:
         default="embplant_pt",
         help="One type or a comma-separated list, e.g. embplant_pt,embplant_mt.",
     )
-    run.add_argument("--database-types", default="embplant_pt,embplant_mt")
+    run.add_argument(
+        "--database-types",
+        default="embplant_pt,embplant_mt",
+        help="Comma-separated GetOrganelleDB types, or all. Ignored by --update.",
+    )
+    run.add_argument(
+        "--database-action",
+        choices=["install", "update", "remove"],
+        default="install",
+        help="Database operation; --update refreshes all installed databases.",
+    )
     run.add_argument("--run-name", default="")
     run.add_argument("--threads", type=int, default=0)
     run.add_argument("--rounds", type=int, default=15)

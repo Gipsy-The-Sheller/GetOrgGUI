@@ -205,6 +205,16 @@ class CommandTests(unittest.TestCase):
         self.assertTrue(any("get_organelle_config.py" in part for part in argv))
         self.assertIn("-a", argv)
         self.assertIn("embplant_pt,embplant_mt", argv)
+        config.database_action = "remove"
+        argv = build_plan(config, self.settings).argv
+        self.assertIn("-r", argv)
+        self.assertNotIn("-a", argv)
+        self.assertIn("embplant_pt,embplant_mt", argv)
+        config.database_action = "update"
+        argv = build_plan(config, self.settings).argv
+        self.assertIn("--update", argv)
+        self.assertNotIn("-a", argv)
+        self.assertNotIn("-r", argv)
 
 
 class ValidationTests(unittest.TestCase):
@@ -314,6 +324,27 @@ class ValidationTests(unittest.TestCase):
             config.organelle = "anonym,embplant_pt"
             issues = validate_config(config, settings, deps, db)
             self.assertTrue(any("must be run alone" in i.message for i in issues))
+
+    def test_database_accepts_all_downloadable_types(self):
+        with tempfile.TemporaryDirectory() as temp:
+            settings = Settings.from_dict({"workspace_root": str(Path(temp) / "runs")})
+            config = RunConfig(
+                mode=MODE_DATABASE,
+                organelle="fungus_mt,animal_mt,embplant_nr",
+                database_types="fungus_mt,animal_mt,embplant_nr",
+                output_root=str(Path(temp) / "runs"),
+            )
+            issues = validate_config(config, settings)
+            self.assertFalse(has_errors(issues), [issue.message for issue in issues])
+            config.organelle = "anonym"
+            config.database_types = "anonym"
+            issues = validate_config(config, settings)
+            self.assertTrue(
+                any(
+                    issue.field == "database_types" and "Unknown database type" in issue.message
+                    for issue in issues
+                )
+            )
 
     def test_missing_reads_is_error(self):
         with tempfile.TemporaryDirectory() as temp:

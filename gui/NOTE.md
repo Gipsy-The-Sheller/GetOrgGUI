@@ -15,7 +15,10 @@ Inputs → Preprocess → Parameters → Run → Results
 ```
 
 - **Inputs**：双端/单端 FASTQ、GFA/FASTG；可同时勾选多个细胞器类型
-  （输出 `-F embplant_pt,embplant_mt` 这类列表）。
+  （输出 `-F embplant_pt,embplant_mt` 这类列表）。**Manage databases…**
+  可安装 GetOrganelleDB 的全部类型（embplant_pt/mt/nr、fungus_mt/nr、
+  animal_mt、other_pt），支持勾选安装、安装全部缺失、更新和删除；
+  `anonym` 使用自定义 seed/gene FASTA，不需要可下载数据库。
 - **Preprocess（fastp）**：可选接头自动检测/自定义接头、质量与长度过滤、
   `--dedup`、首尾裁剪；fastp 原始 JSON/HTML 报告与 trimmed reads 写入
   `<workspace>/_workbench/preprocess/<run_id>/`。

@@ -18,6 +18,7 @@ from .models import (
     MODE_DATABASE,
     MODE_READS,
     ORGANELLES,
+    DATABASE_TYPES,
     DependencyReport,
     DatabaseStatus,
     RunConfig,
@@ -379,32 +380,50 @@ def _check_inputs(issues: List[ValidationIssue], config: RunConfig) -> None:
     elif config.mode == MODE_ASSEMBLY:
         _check_file(issues, "graph", "Assembly graph", config.graph, GRAPH_SUFFIXES)
     elif config.mode == MODE_DATABASE:
-        if not config.database_types.strip() and not config.organelle.strip():
+        action = config.database_action or "install"
+        if action not in ("install", "update", "remove"):
             issues.append(
                 ValidationIssue(
                     "error",
-                    "database_types",
-                    "No database type was selected.",
-                    "Choose at least one organelle type.",
+                    "database_action",
+                    f"Unknown database action: {action}.",
+                    "Use install, update or remove.",
                 )
             )
-        else:
-            types = [
-                part.strip()
-                for part in (config.database_types or config.organelle).split(",")
-                if part.strip()
-            ]
-            valid = set(ORGANELLES) | {"all"}
-            unknown = [item for item in types if item not in valid]
-            if unknown:
+        if action != "update":
+            if not config.database_types.strip() and not config.organelle.strip():
                 issues.append(
                     ValidationIssue(
                         "error",
                         "database_types",
-                        "Unknown organelle type: " + ", ".join(unknown),
-                        "Use one of: " + ", ".join(sorted(ORGANELLES)) + ", or all.",
+                        "No database type was selected.",
+                        "Choose at least one organelle type.",
                     )
                 )
+            else:
+                types = [
+                    part.strip()
+                    for part in (config.database_types or config.organelle).split(",")
+                    if part.strip()
+                ]
+                valid = set(DATABASE_TYPES) | {"all"}
+                unknown = [item for item in types if item not in valid]
+                if unknown:
+                    note = ""
+                    if "anonym" in unknown:
+                        note = (
+                            " “Unknown organelle” uses a custom seed and gene FASTA, "
+                            "not a downloadable database."
+                        )
+                    issues.append(
+                        ValidationIssue(
+                            "error",
+                            "database_types",
+                            "Unknown database type: " + ", ".join(unknown) + ".",
+                            "Use one of: " + ", ".join(DATABASE_TYPES)
+                            + ", or all." + note,
+                        )
+                    )
 
 
 def _split_values(value: str) -> List[str]:

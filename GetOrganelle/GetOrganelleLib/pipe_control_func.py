@@ -1132,6 +1132,9 @@ def download_file_with_progress(remote_url, output_file, log_handler=None, allow
                     requests.exceptions.ReadTimeout,
                     ConnectionRefusedError) as e:
                 info_list.append("timeout")
+                # Windows cannot unlink a file while the download handle is
+                # still open; close it before removing the partial file.
+                file_h.close()
                 os.remove(temp_file)
                 if count_try == try_times:
                     sys.stdout.write("Downloading %s failed, cost %.2f s\n" %
@@ -1144,6 +1147,7 @@ def download_file_with_progress(remote_url, output_file, log_handler=None, allow
         if sha256_v:
             this_sha256 = cal_f_sha256(temp_file)
             if this_sha256 != sha256_v:
+                file_h.close()
                 os.remove(temp_file)
                 info_list.append("sha256_unmatch")
                 if count_try == try_times:

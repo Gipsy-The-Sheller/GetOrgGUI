@@ -26,6 +26,12 @@ value. Plastome and mitogenome databases are installed as a pair. A seed/label
 database must be installed for every non-`anonym` organelle type.
 Check it with `Manage databases…` in the GUI or `getorganelle_config.py --list`.
 
+GetOrganelleDB provides downloadable databases for `embplant_pt`,
+`embplant_mt`, `embplant_nr`, `fungus_mt`, `fungus_nr`, `animal_mt` and
+`other_pt`. The GUI can install selected types, all missing types, update all
+installed types, or remove selected types; `anonym` is configured with a
+custom seed FASTA and gene FASTA and is not a downloadable database.
+
 ## GUI workflow
 
 1. **Inputs** — choose `Reads` or `Assembly graph`, add files, tick one or

@@ -112,6 +112,8 @@ Bowtie2 的 `bowtie2` 是 Perl 脚本。Windows 下需要：
   Windows 下 `cmd.exe` 的“找不到命令”是 GBK 编码；若 Python 处于 UTF-8 模式
   （`PYTHONUTF8=1`），`subprocess.getstatusoutput()` 用 UTF-8 解码会抛
   `UnicodeDecodeError`。改为只检查返回码，避免 GUI/agent 环境启用 UTF-8 模式时崩溃
+- `download_file_with_progress()` 在下载失败/校验失败时先关闭临时文件句柄再删除；
+  Windows 不允许删除仍打开的文件，旧逻辑会抛 `PermissionError` 并留下 `.Temp`
 
 ## 使用
 

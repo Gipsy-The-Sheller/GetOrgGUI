@@ -86,7 +86,9 @@ arm64 构建在 Windows 11 ARM64 的 MSYS2 `CLANGARM64` shell 中进行，设置
 
 1. 安装 Python 3.10+ 与 Perl（Strawberry Perl 或 Git for Windows 自带的 Perl）。
 2. 运行 `setup_venv.bat` 创建 Python 环境。
-3. `run_get_organelle_config.bat -a embplant_pt,embplant_mt` 初始化数据库。
+3. `run_get_organelle_config.bat -a embplant_pt,embplant_mt` 初始化数据库；
+   也可安装 `embplant_nr`、`fungus_mt`、`fungus_nr`、`animal_mt`、`other_pt`，
+   或用 `-a all` 安装全部。GUI 的 **Manage databases…** 支持逐类安装/更新/删除。
 4. 用 `run_get_organelle_reads.bat` 或 `run_get_organelle_assembly.bat` 运行。
 
 ### 桌面 GUI

@@ -42,6 +42,9 @@ requirements.txt
 
 ```bat
 run_get_organelle_config.bat -a embplant_pt,embplant_mt
+rem 也可安装其他 GetOrganelleDB 类型，例如：
+rem run_get_organelle_config.bat -a fungus_mt,animal_mt
+rem 安装全部：run_get_organelle_config.bat -a all
 ```
 
 4. 从 reads 组装：

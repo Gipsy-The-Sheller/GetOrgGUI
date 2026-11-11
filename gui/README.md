@@ -13,7 +13,12 @@ Inputs → Preprocess → Parameters → Run → Results
 
 - **Inputs** — paired/unpaired FASTQ or an existing GFA/FASTG graph, one or
   more organelle types (multi-select → `-F a,b`), workspace and run folder,
-  with live database status.
+  with live database status. **Manage databases…** handles every
+  GetOrganelleDB type — `embplant_pt`, `embplant_mt`, `embplant_nr`,
+  `fungus_mt`, `fungus_nr`, `animal_mt` and `other_pt` — with per-type
+  selection, “install missing”, update and remove actions. Plastome and
+  mitogenome remain paired for land-plant runs; `anonym` uses a custom seed
+  and gene FASTA instead of a downloadable database.
 - **Preprocess** — optional fastp stage: adapter auto-detection/custom
   sequences, quality and length filtering, optional front/tail trimming and
   deduplication. Trimmed reads and fastp JSON/HTML reports live under
