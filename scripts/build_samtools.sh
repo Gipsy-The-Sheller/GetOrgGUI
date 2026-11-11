@@ -12,7 +12,7 @@ HTS="$SRC/htslib-1.25"
 PREFIX="$STAGE/samtools"
 
 log "Building htslib ($TARGET_ARCH) with $CC"
-rm -rf "$SRC"
+rm -rf "$SRC" "$PREFIX"
 cp -a "$ROOT/vendor/samtools" "$SRC"
 cd "$HTS"
 ./configure \
@@ -38,8 +38,10 @@ sed -i 's#^static_libs=.*#static_libs=-lpthread -lz -lm -lws2_32 -lgnurx -ltre -
   "$HTS/htslib.pc.tmp"
 rm -f "$HTS/htslib_static.mk"
 
-"$MAKE" -j"$JOBS" SHELL="$SHELL_WIN"
-"$MAKE" install SHELL="$SHELL_WIN"
+# Only the static library and samtools are shipped.  Building htslib's
+# Windows shared DLL also builds an import library with gendef, which is no
+# longer available from the current MSYS2 repositories.
+"$MAKE" -j"$JOBS" lib-static SHELL="$SHELL_WIN"
 
 log "Building samtools ($TARGET_ARCH) with $CC"
 cd "$SRC"
