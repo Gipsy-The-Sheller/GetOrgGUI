@@ -16,6 +16,15 @@ if errorlevel 1 goto :error
 "%ROOT%venv\Scripts\python.exe" -m pip install -r "%ROOT%requirements.txt"
 if errorlevel 1 goto :error
 
+if exist "%ROOT%gui\requirements.txt" (
+    "%ROOT%venv\Scripts\python.exe" -m pip install -r "%ROOT%gui\requirements.txt"
+    if errorlevel 1 (
+        echo.
+        echo WARNING: GUI dependencies could not be installed.
+        echo The command-line package still works; the desktop GUI may not start.
+    )
+)
+
 echo.
 echo Python environment created at "%ROOT%venv".
 goto :eof

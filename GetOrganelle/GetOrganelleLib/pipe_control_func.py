@@ -198,7 +198,22 @@ def pool_multiprocessing(target, iter_args, constant_args, num_process):
 #      or (os.access(test_this, os.X_OK) and os.path.isfile(test_this.split(" ")[0]))
 # test whether a variable with argv (getstatusoutput) is executable
 def executable(test_this):
-    return True if getstatusoutput(test_this)[0] not in DEAD_CODES else False
+    # Windows: do not decode the child output.  A localized cmd.exe error
+    # message is written in the OEM/ANSI code page, and
+    # subprocess.getstatusoutput() decodes with UTF-8 when Python runs in
+    # UTF-8 mode, which raises UnicodeDecodeError before the return code can
+    # be inspected.
+    try:
+        completed = subprocess.run(
+            test_this,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=15,
+        )
+        return completed.returncode not in DEAD_CODES
+    except (OSError, subprocess.SubprocessError):
+        return False
 
 
 def is_valid_path(path_str):

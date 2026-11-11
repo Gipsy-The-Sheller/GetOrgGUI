@@ -1,0 +1,3 @@
+# Qt binding used by the GetOrganelle Workbench.
+# PyQt5 matches YR-MPE; there is no win_arm64 wheel, so the GUI is x64-only.
+PyQt5==5.15.11; platform_machine != "ARM64"

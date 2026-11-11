@@ -107,6 +107,10 @@ Bowtie2 的 `bowtie2` 是 Perl 脚本。Windows 下需要：
 - `GetOrganelleLib/seq_parser.py`：`SequenceList(file, indexed=True)` 中 `read_fasta()`
   经 `append()` 已填好索引，原代码随后又断言“标签不在索引中”，必然触发 `AssertionError`；
   改为重建索引后再查重（该上游 bug 与平台无关，仅在“SPAdes scaffolds 补洞”路径触发）
+- `GetOrganelleLib/pipe_control_func.py`：`executable()` 不再解码子进程输出。中文
+  Windows 下 `cmd.exe` 的“找不到命令”是 GBK 编码；若 Python 处于 UTF-8 模式
+  （`PYTHONUTF8=1`），`subprocess.getstatusoutput()` 用 UTF-8 解码会抛
+  `UnicodeDecodeError`。改为只检查返回码，避免 GUI/agent 环境启用 UTF-8 模式时崩溃
 
 ## 使用
 
@@ -130,6 +134,23 @@ run_get_organelle_assembly.bat -a assembly.fasta -F embplant_pt -o out -t 8
 
 三个 `.bat` 会把 `venv\Scripts`、bowtie2、ncbi-blast、SPAdes\bin 放到 PATH 前面。
 
+## 桌面 GUI（GetOrganelle Workbench）
+
+`gui/` 提供按 YR-MPE 标准实现的 PyQt5 工作台：
+
+- 工作流 `Inputs → Parameters → Run → Results`，左侧 workflow rail、右侧
+  inspector、底部 Job Center；
+- 参数 Basic/Advanced 分层、内联校验、命令行预览；
+- 非模态 QProcess 任务、实时日志、单一 Cancel（Windows 下 `taskkill /T /F`
+  终止整棵进程树）、结果横幅与空状态；
+- `ResultSpec`（`yrmpe.result.v1`）、`control_bindings()`、skill 文档与
+  `run.json` 溯源，可按 YR-MPE 插件契约导出；
+- headless CLI：`python -m getorganelle_gui.cli inspect|check|run --json`；
+- 浅/深色语义色 tokens，状态均为“图标 + 文字 + 颜色”。
+
+GUI 使用 PyQt5（与 YR-MPE 一致），因此只有 x64 轮子；arm64 包保留完整命令行
+与 headless CLI。`setup_venv.bat` 会在 x64 上自动安装 `gui/requirements.txt`。
+
 ## 验证结果（2026-11-11）
 
 | 测试 | 结果 |
@@ -138,6 +159,9 @@ run_get_organelle_assembly.bat -a assembly.fasta -F embplant_pt -o out -t 8
 | K45 预组装，`more.fq`（80,000 reads） | 通过；de Bruijn 顶点数 29889，与 MSYS2 对照完全一致（修复前 29890 并崩溃） |
 | 完整 GetOrganelle reads 流程（embplant_pt，`-k 21,45,65 -R 1`） | 通过（exit 0，日志 0 条 ERROR），输出 6 scaffolds |
 | GetOrganelle assembly 流程（`-g` GFA 输入） | 通过（exit 0），输出 6 scaffolds |
+| GUI 驱动完整 reads 流程（JobRunner/QProcess） | 通过（status success，6 scaffolds，12,695 bp，run.json 写入） |
+| GUI headless CLI `inspect` / `check` / `run --json` | 通过；输出 `yrmpe.result.v1` |
+| GUI 单元测试（command/validation/results）与离屏 smoke | 通过 |
 | `spades-core.exe` DLL 依赖 | 仅 KERNEL32/dbghelp/msvcrt + 随附的 libgcc/libstdc++/libgomp/libwinpthread，**无 msys-2.0.dll** |
 | `bowtie2-align-s.exe` / `samtools.exe` DLL 依赖 | 仅系统 DLL，**无 msys-2.0.dll** |
 

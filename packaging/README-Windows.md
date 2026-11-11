@@ -15,6 +15,8 @@ GetOrganelleDep\Windows\
 run_get_organelle_reads.bat
 run_get_organelle_assembly.bat
 run_get_organelle_config.bat
+GetOrganelleGUI.bat             桌面 GUI（YR-MPE 风格工作台）
+gui\                            GUI 源码、测试与 headless CLI
 setup_venv.bat
 requirements.txt
 ```
@@ -34,7 +36,7 @@ requirements.txt
 ## 快速开始
 
 1. 安装 Python 3.10+，确认命令行可以运行 `python`（或 `py -3`）。
-2. 双击或在命令行运行 `setup_venv.bat`，创建 `venv` 并安装依赖。
+2. 双击或在命令行运行 `setup_venv.bat`，创建 `venv` 并安装依赖（x64 会同时安装 PyQt5）。
 3. 初始化数据库（首次使用，二者需一起安装）：
 
 ```bat
@@ -55,6 +57,35 @@ run_get_organelle_assembly.bat -g assembly_graph.gfa -F embplant_pt -o out -t 8
 
 三个 `.bat` 会自动把 `venv\Scripts` 与各依赖目录加入 `PATH`。
 
+## 桌面 GUI
+
+双击 `GetOrganelleGUI.bat` 启动 **GetOrganelle Workbench**。工作流为
+Inputs → Parameters → Run → Results，包含：
+
+- 参数 Basic / Advanced 分层、内联校验与命令预览；
+- 非模态后台任务、实时日志、单一 Cancel、完成后的结果横幅；
+- 结果表、FASTA/图文件预览、警告与 `run.json` 溯源；
+- 数据库状态检查与一键安装；
+- 浅色 / 深色主题，状态同时用图标、文字和颜色表达；
+- 快捷键：F5 运行、Esc 取消、Ctrl+, 设置、Ctrl+Shift+O 打开输出。
+
+无界面 / agent 用法：
+
+```bat
+venv\Scripts\python.exe -m getorganelle_gui.cli inspect --json
+venv\Scripts\python.exe -m getorganelle_gui.cli run --mode reads --reads1 R1.fq.gz --reads2 R2.fq.gz --organelle embplant_pt --workspace runs --run-name sample --json
+```
+
+运行前请把 `gui` 目录加入 `PYTHONPATH`，或在 GUI 目录中执行：
+
+```bat
+set PYTHONPATH=%ROOT%gui
+```
+
+> GUI 使用 PyQt5（与 YR-MPE 一致）。PyQt5 没有 Windows arm64 轮子，因此
+> arm64 发行包仅提供命令行流程；如需 GUI，请使用 x64 版本的 Python
+> （Windows 11 ARM64 可通过 x64 模拟运行）。
+
 ## 已知限制
 
 - Bowtie2 的 Windows 构建不支持 mmap / 共享内存，`--mm` 会被包装器自动移除。
@@ -62,6 +93,7 @@ run_get_organelle_assembly.bat -g assembly_graph.gfa -F embplant_pt -o out -t 8
 - 输入/输出路径建议不要包含空格（GetOrganelle 内部命令拼接未全面加引号）。
 - Bandage 可视化是可选的；未安装时自动跳过。
 - samtools 不参与 GetOrganelle 主流程。
+- GUI 目前仅支持 x64（PyQt5 无 arm64 轮子）；arm64 包提供完整命令行工具与 headless CLI。
 
 ## 许可证
 

@@ -34,8 +34,10 @@ Windows x86_64 与 Windows arm64 两个版本。
 │  ├─ spades/             已打补丁的 SPAdes 源代码快照
 │  ├─ bowtie2/            Bowtie2 2.5.5 源码（含包装器补丁）
 │  └─ samtools/           samtools 1.25 + htslib 源码
+├─ gui/                   PyQt5 桌面 GUI（YR-MPE 风格）与 headless CLI
 ├─ packaging/             最终用户发行包所需的启动器与说明
 ├─ scripts/               本地/CI 构建脚本
+├─ GetOrganelleGUI.bat    GUI 启动器
 ├─ run_get_organelle_*.bat
 ├─ .github/workflows/build.yml
 ├─ PORTING_NOTES.md       移植过程、补丁清单与验证记录
@@ -84,6 +86,23 @@ arm64 构建在 Windows 11 ARM64 的 MSYS2 `CLANGARM64` shell 中进行，设置
 2. 运行 `setup_venv.bat` 创建 Python 环境。
 3. `run_get_organelle_config.bat -a embplant_pt,embplant_mt` 初始化数据库。
 4. 用 `run_get_organelle_reads.bat` 或 `run_get_organelle_assembly.bat` 运行。
+
+### 桌面 GUI
+
+双击 `GetOrganelleGUI.bat` 启动 **GetOrganelle Workbench**（Inputs →
+Parameters → Run → Results）。它按 YR-MPE 的插件契约与 UI 审计实现：参数
+Basic/Advanced 分层、内联校验、非模态后台任务、Job Center、结果预览、
+`run.json` 溯源、数据库管理与浅/深色主题。详见 `gui/README.md`。
+
+同一套模型还提供 headless / agent 接口：
+
+```bat
+set PYTHONPATH=%CD%\gui
+venv\Scripts\python.exe -m getorganelle_gui.cli inspect --json
+venv\Scripts\python.exe -m getorganelle_gui.cli run --mode reads --reads1 R1.fq.gz --reads2 R2.fq.gz --organelle embplant_pt --workspace runs --run-name sample --json
+```
+
+输出为 `yrmpe.result.v1` ResultSpec。
 
 详见 `packaging/README-Windows.md`。
 

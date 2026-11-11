@@ -115,10 +115,31 @@ jobs:
             build/ci-arm64/*.sha256
           if-no-files-found: error
 
+  gui-tests:
+    name: GUI tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install GUI dependencies
+        run: python -m pip install --upgrade pip PyQt5==5.15.11 numpy gekko requests
+
+      - name: Core tests
+        run: python -m unittest discover -s gui/tests -p "test_*.py" -v
+
+      - name: GUI smoke test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python gui/tests/gui_smoke.py
+
   release:
     name: Release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build-x64, build-arm64]
+    needs: [build-x64, build-arm64, gui-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

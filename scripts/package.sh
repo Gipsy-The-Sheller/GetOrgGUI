@@ -55,14 +55,16 @@ if [[ -f "$ROOT/vendor/samtools/COPYING" ]]; then
   cp -a "$ROOT/vendor/samtools/COPYING" "$DEPS/samtools/"
 fi
 
-# Launchers and setup files
+# Launchers, GUI and setup files
 cp -a "$ROOT/run_get_organelle_reads.bat" \
       "$ROOT/run_get_organelle_assembly.bat" \
       "$ROOT/run_get_organelle_config.bat" \
+      "$ROOT/GetOrganelleGUI.bat" \
       "$ROOT/packaging/setup_venv.bat" \
       "$ROOT/packaging/requirements.txt" \
       "$ROOT/packaging/README-Windows.md" \
       "$DEST/"
+cp -a "$ROOT/gui" "$DEST/gui"
 
 # Shrink binaries (keep debug info out of the distribution).
 log "Stripping binaries with $STRIP"
