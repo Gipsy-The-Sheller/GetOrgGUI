@@ -76,7 +76,10 @@ CXX="$(resolve_tool "$CXX")"
 AR="$(resolve_tool "$AR")"
 RANLIB="$(resolve_tool "$RANLIB")"
 STRIP="$(resolve_tool "$STRIP")"
-RC="$(resolve_tool "$RC")"
+if ! RC="$(resolve_tool "$RC" 2>/dev/null)"; then
+  # windres is only needed for optional Windows resource files.
+  RC=""
+fi
 export CC CXX AR RANLIB STRIP RC POPCNT_CAPABILITY
 
 # Use mingw32-make when available (MSYS make can lose TMPDIR through the
