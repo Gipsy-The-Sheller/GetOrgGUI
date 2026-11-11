@@ -48,6 +48,13 @@ jobs:
       - name: Build dependencies
         run: bash ./scripts/build_all.sh x86_64
 
+      - name: Smoke test
+        run: |
+          ./stage/x64/samtools/bin/samtools.exe --version
+          ./stage/x64/bowtie2/bowtie2-align-s.exe --version
+          ./stage/x64/ncbi-blast/blastn.exe -version
+          ./stage/x64/spades/bin/spades-core.exe || true
+
       - name: Package
         run: bash ./scripts/package.sh x86_64 "${{ env.PKG_VERSION }}"
 
@@ -89,6 +96,13 @@ jobs:
 
       - name: Build dependencies
         run: bash ./scripts/build_all.sh arm64
+
+      - name: Smoke test
+        run: |
+          ./stage/arm64/samtools/bin/samtools.exe --version
+          ./stage/arm64/bowtie2/bowtie2-align-s.exe --version
+          ./stage/arm64/ncbi-blast/blastn.exe -version
+          ./stage/arm64/spades/bin/spades-core.exe || true
 
       - name: Package
         run: bash ./scripts/package.sh arm64 "${{ env.PKG_VERSION }}"
