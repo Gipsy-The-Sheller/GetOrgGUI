@@ -68,7 +68,7 @@ jobs:
 
   build-arm64:
     name: Windows arm64
-    # GitHub-hosted Windows arm64 runners (public preview for public repos)
+    # GitHub-hosted Windows arm64 runner.
     runs-on: windows-11-arm
     defaults:
       run:

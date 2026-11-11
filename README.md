@@ -75,9 +75,8 @@ arm64 构建在 Windows 11 ARM64 的 MSYS2 `CLANGARM64` shell 中进行，设置
   上传 `GetOrganelle-Windows-x64.zip` / `GetOrganelle-Windows-arm64.zip` 及 SHA256。
 - 推送 `v*` 标签：构建完成后自动创建 GitHub Release 并附带两个发行包。
 
-> arm64 任务使用 GitHub 托管的 `windows-11-arm` 运行器。该运行器目前面向
-> **公开仓库**提供（公开预览）；私有仓库如需 arm64 构建，需要配置自托管
-> 或 larger runner。
+> arm64 任务使用 GitHub 托管的 `windows-11-arm` 运行器。公开仓库可免费使用；
+> 私有仓库请确认账户/计划是否包含 arm64 标准运行器，或配置自托管运行器。
 
 ## 发行包使用
 
