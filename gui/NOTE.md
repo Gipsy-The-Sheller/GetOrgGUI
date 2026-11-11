@@ -96,6 +96,27 @@ venv\Scripts\python.exe -m getorganelle_gui.cli run --mode reads ^
   --preprocess --adapter-mode auto --workspace runs --run-name sample --json
 ```
 
+## YRTools 接入与 agent 边界
+
+- `gui/settings.json` 提供 YRTools `polypyplug` 入口：
+  `getorganelle_gui.yrtools_entry:GetOrganelleEntry`。把 `gui` 目录复制/链接到
+  `YRTools/plugins/` 后，YRTools 会调用 `entry.run()`；该入口构造
+  `MainWindow` 并返回 `MainWindow.run()`，后者返回 `self`，可直接插入
+  YRTools 标签页。
+- 嵌入模式下主题只作用于本 Widget 子树（`apply_global_theme=False`），不会
+  覆盖 YRTools 的全局字体与样式；独立启动仍使用全局样式。
+- 当前 agent 接入面是 **headless CLI + 元数据**：`cli inspect/check/run --json`、
+  `control_bindings()`、`agent_actions()`、skill 文档和 `yrmpe.result.v1`/
+  `run.json`。
+- 当前**没有**在桌面 Widget 上实现 YR-MPE 的 `AgentBridge`、
+  `agent_invoke`、`inspect_status`、`modify_options` 等实时控制面。考虑：
+  GetOrganelle 是长任务且需要 Windows 进程树取消；现有 GUI 运行可能弹出
+  覆盖确认等模态框；GUI 控制面还需要 action registry 与 token 保护。
+  因此现阶段把稳定、无显示依赖的 CLI 作为 agent 边界，宿主嵌入和 agent
+  控制保持解耦。
+- `import_from/import_data` 目前只被入口接收，尚未映射到 Inputs 页；完整
+  BasePlugin 风格 agent 面属于后续工作。
+
 ## 已知限制
 
 - GUI 仅 x64（PyQt5 无 arm64 wheel）。

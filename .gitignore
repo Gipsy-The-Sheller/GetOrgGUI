@@ -6,6 +6,7 @@
 /venv/
 /spades_test/
 /stage/
+/GetOrganelleRuns/
 
 # GetOrganelle runtime dependency binaries (built by CI or scripts)
 /GetOrganelle/GetOrganelleDep/

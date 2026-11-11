@@ -142,6 +142,11 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: python gui/tests/gui_smoke.py
 
+      - name: YRTools entry smoke test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python gui/tests/yrtools_smoke.py
+
       - name: BLAST integration smoke test (optional)
         run: python gui/tests/blast_smoke.py
 

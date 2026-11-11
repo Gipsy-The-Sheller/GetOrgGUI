@@ -607,6 +607,9 @@ class MetadataTests(unittest.TestCase):
     def test_plugin_metadata(self):
         info = plugin_info()
         self.assertEqual(info["tool"], "GetOrganelle")
+        self.assertIn("yrtools_entry", info["host_entry_point"])
+        self.assertEqual(info["agent_surface"]["transport"], "headless-cli")
+        self.assertFalse(info["agent_surface"]["in_process_bridge"])
         bindings = control_bindings()
         ids = [binding["id"] for binding in bindings]
         self.assertEqual(len(ids), len(set(ids)))

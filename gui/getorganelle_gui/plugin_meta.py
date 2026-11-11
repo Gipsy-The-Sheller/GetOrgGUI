@@ -79,6 +79,16 @@ def plugin_info() -> dict:
         "citation_keys": list(CITATIONS),
         "skill": "skills/getorganelle.md",
         "result_schema": "yrmpe.result.v1",
+        "host_entry_point": "getorganelle_gui.yrtools_entry:GetOrganelleEntry",
+        "agent_surface": {
+            "transport": "headless-cli",
+            "commands": [
+                "python -m getorganelle_gui.cli inspect --json",
+                "python -m getorganelle_gui.cli check --json",
+                "python -m getorganelle_gui.cli run ... --json",
+            ],
+            "in_process_bridge": False,
+        },
     }
 
 

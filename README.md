@@ -111,6 +111,11 @@ venv\Scripts\python.exe -m getorganelle_gui.cli run --mode reads --reads1 R1.fq.
 
 输出为 `yrmpe.result.v1` ResultSpec。
 
+GUI 可通过 `gui/settings.json` 作为 YRTools `polypyplug` 插入宿主标签页
+（入口 `getorganelle_gui.yrtools_entry:GetOrganelleEntry`，`MainWindow.run()`
+返回 `self`）；agent 侧目前以 headless CLI 和 `control_bindings()`/skill
+文档为稳定边界，不提供进程内 `AgentBridge`。详见 `gui/README.md`。
+
 详见 `packaging/README-Windows.md`。
 
 ## 已知限制

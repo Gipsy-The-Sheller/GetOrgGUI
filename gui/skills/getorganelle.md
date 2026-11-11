@@ -102,6 +102,16 @@ python -m getorganelle_gui.cli run \
 Stable action ids: `getorganelle.inspect`, `getorganelle.check`,
 `getorganelle.run`.
 
+The desktop widget does not expose an in-process YR-MPE `AgentBridge`,
+`agent_invoke`, `inspect_status` or `modify_options` surface yet. The stable
+agent boundary is the hidden-command CLI above (`inspect`, `check`, `run`) plus
+`control_bindings()` and this skill document. Host UI embedding is separate:
+`gui/settings.json` declares
+`getorganelle_gui.yrtools_entry:GetOrganelleEntry`, whose `run()` returns the
+main workbench widget (`MainWindow.run()` returns `self`). The embedded widget
+scopes its stylesheet to its own subtree so a YRTools host keeps ownership of
+global fonts and theme.
+
 ## Interpretation
 
 - A successful run produces at least one `*path_sequence.fasta`. For circular

@@ -82,6 +82,56 @@ interactive visualization of de novo genome assemblies.* Bioinformatics
 2015;31(20):3350–3352. doi:10.1093/bioinformatics/btv383. The active fork is
 [Bandage-NG](https://github.com/asl/BandageNG).
 
+## YRTools / host embedding
+
+`gui/settings.json` declares a YRTools `polypyplug` entry point:
+
+```
+getorganelle_gui.yrtools_entry:GetOrganelleEntry
+```
+
+Copy or link the `gui` directory into `YRTools/plugins/` (YRTools adds the
+plugin directory to `sys.path`). `GetOrganelleEntry.run()` constructs
+`MainWindow` and returns `MainWindow.run()`, which returns `self` — the same
+widget YRTools inserts into a tab. The embedded window applies its semantic
+tokens to its own subtree instead of changing the application stylesheet, so
+the host keeps ownership of fonts and global styling. Standalone startup is
+unchanged and still applies the theme globally.
+
+Data import from a YR-MPE workflow (`import_from`/`import_data`) is accepted
+but not yet mapped into the Inputs page. The host can still open the plugin
+and use its normal file pickers.
+
+## Agent integration
+
+The designed agent surface is the **headless CLI + machine-readable
+metadata**, not an in-process GUI bridge:
+
+- `python -m getorganelle_gui.cli inspect --json` returns plugin metadata,
+  dependencies, databases, `control_bindings()` and `agent_actions()`.
+- `check --json` starts every configured tool and reports versions.
+- `run ... --json` runs the same command builder/runner path and emits a
+  `yrmpe.result.v1` ResultSpec; `run.json` and the log remain beside the
+  outputs.
+- `skills/getorganelle.md` is the agent-facing skill document.
+
+There is deliberately **no** `AgentBridge`, `agent_invoke`, `inspect_status`
+or `modify_options` on the desktop widget yet. The reasons are practical:
+
+- GetOrganelle runs are long and must be cancellable as a Windows process
+  tree; the CLI already owns that lifecycle without a Qt event loop.
+- GUI runs can raise modal overwrite confirmations; an agent path must avoid
+  modal dialogs, and that policy is not implemented.
+- The host-level YR-MPE bridge requires a registered action registry and a
+  token-protected transport; exposing arbitrary widget actions without that
+  contract would be less safe and less stable than the JSON CLI.
+- Host embedding and agent control are separable: YRTools can embed the
+  widget while an agent drives the CLI.
+
+If full YR-MPE agent-plugin compliance is needed, the next step is to add the
+BasePlugin-style status/console/options/action facade and route it through
+the same handlers as the GUI; that is not claimed today.
+
 ## Running
 
 From the repository or release package root:
@@ -161,7 +211,9 @@ gui/
 │  ├─ settings_dialog.py # paths/runtime/theme/asynchronous dependency check
 │  ├─ database_dialog.py # seed/label database status and installation
 │  ├─ plugin_meta.py     # metadata, control bindings, agent actions
+│  ├─ yrtools_entry.py   # YRTools/YR-MPE host entry (run() returns MainWindow)
 │  └─ cli.py             # headless inspect/check/run
+├─ settings.json         # YRTools polypyplug manifest
 ├─ skills/getorganelle.md
 ├─ tests/                # unit tests + offscreen smoke/screenshots
 ├─ requirements.txt
@@ -181,7 +233,9 @@ venv\Scripts\python.exe gui\tests\gui_smoke.py
 runner; `gui_preprocess_smoke.py` runs fastp → GetOrganelle
 (requires the built dependencies and the synthetic test reads).
 `blast_smoke.py` runs an optional synthetic `blastn` + `tblastn` integration
-test and skips when the bundled BLAST+ tools are absent.
+test and skips when the bundled BLAST+ tools are absent. `yrtools_smoke.py`
+constructs the YRTools entry, embeds the widget in a host tab, and checks that
+`MainWindow.run()` returns `self` without overriding the host stylesheet.
 
 ## Scaling note
 

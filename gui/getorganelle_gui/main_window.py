@@ -49,7 +49,7 @@ from .paths import (
 from .runner import JobRunner
 from .settings import Settings
 from .settings_dialog import SettingsDialog
-from .theme import Tokens, apply_theme
+from .theme import THEMES, Tokens, apply_theme, stylesheet
 from .validation import has_errors, issues_by_field, validate_config
 from .widgets import LogView, make_icon_button, path_name
 
@@ -131,8 +131,9 @@ class LogDialog(QDialog):
 class MainWindow(QMainWindow):
     log_appended = pyqtSignal(str, str)
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, apply_global_theme: bool = True):
         super().__init__()
+        self._apply_global_theme = bool(apply_global_theme)
         self.settings = settings.normalize()
         self.deps = probe_dependencies(self.settings, check_versions=False)
         self.db_status = database_status(self.settings)
@@ -149,7 +150,7 @@ class MainWindow(QMainWindow):
         self._pages_ready = False
         self._console_dialog = None
         self._database_dialog = None
-        self._tokens = apply_theme(QApplication.instance(), self.settings.theme)
+        self._tokens = self._apply_theme_scope()
 
         self.setWindowTitle(f"{APP_NAME} {__version__}")
         self.setMinimumSize(1024, 640)
@@ -568,7 +569,7 @@ class MainWindow(QMainWindow):
         self.inputs_page.workspace_input.setText(self.settings.workspace_root)
         self.inputs_page.refresh_databases()
         self.preprocess_page.update_availability()
-        self._tokens = apply_theme(QApplication.instance(), self.settings.theme)
+        self._tokens = self._apply_theme_scope()
         self.theme_button.setText("☀" if self.settings.theme == "dark" else "☾")
         self._apply_log_tokens()
         self.on_config_changed()
@@ -618,9 +619,17 @@ class MainWindow(QMainWindow):
             self.settings.save()
         except OSError:
             pass
-        self._tokens = apply_theme(QApplication.instance(), self.settings.theme)
+        self._tokens = self._apply_theme_scope()
         self.theme_button.setText("☀" if self.settings.theme == "dark" else "☾")
         self._apply_log_tokens()
+
+    def _apply_theme_scope(self) -> Tokens:
+        """Apply the theme globally standalone, or locally when embedded."""
+        if self._apply_global_theme:
+            return apply_theme(QApplication.instance(), self.settings.theme)
+        tokens = THEMES.get(self.settings.theme, THEMES["light"])
+        self.setStyleSheet(stylesheet(tokens))
+        return tokens
 
     def _apply_log_tokens(self) -> None:
         self.run_page.log_view.set_tokens(self._tokens)
@@ -648,6 +657,16 @@ class MainWindow(QMainWindow):
         self.inputs_page.refresh_databases()
 
     # ---------------------------------------------------------------- window
+    def run(self, import_from=None, import_data=None, workdir=None, **kwargs):
+        """Return this widget for YRTools/YR-MPE host insertion.
+
+        The YRTools plugin loader creates an entry object and calls
+        ``entry.run()``; returning ``self`` keeps the main workbench widget
+        intact for a host tab or splitter.  Standalone startup still calls
+        ``show()`` from :mod:`getorganelle_gui.app`.
+        """
+        return self
+
     def _restore_geometry(self) -> None:
         encoded = self.settings.window_geometry
         if encoded:

@@ -89,6 +89,11 @@ set PYTHONPATH=%ROOT%gui
 > arm64 发行包仅提供命令行流程；如需 GUI，请使用 x64 版本的 Python
 > （Windows 11 ARM64 可通过 x64 模拟运行）。
 
+`gui/settings.json` 是 YRTools `polypyplug` 清单（入口
+`getorganelle_gui.yrtools_entry:GetOrganelleEntry`）；将 `gui` 目录放入
+`YRTools/plugins/` 即可作为标签页加载。`MainWindow.run()` 返回 `self`，
+嵌入模式不会覆盖宿主的全局样式表。
+
 ## 已知限制
 
 - Bowtie2 的 Windows 构建不支持 mmap / 共享内存，`--mm` 会被包装器自动移除。

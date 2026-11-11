@@ -949,7 +949,7 @@ class GraphViewer(QWidget):
             self.canvas,
             settings=self.settings,
             tokens=self.tokens,
-            parent=self.window(),
+            parent=self,
         )
         self._blast_dialog.show()
 
