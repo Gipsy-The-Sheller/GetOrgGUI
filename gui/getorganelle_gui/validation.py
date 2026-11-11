@@ -660,7 +660,8 @@ def validate_config(
                     "error",
                     "dependencies",
                     "Python packages are missing: " + ", ".join(deps.missing_modules),
-                    "Run setup_venv.bat (or pip install numpy gekko requests) with the configured Python.",
+                    "Open Settings → Paths and click “Use running Python” (the bundled venv), "
+                    "or run setup_venv.bat / pip install numpy gekko requests for the configured interpreter.",
                 )
             )
 
