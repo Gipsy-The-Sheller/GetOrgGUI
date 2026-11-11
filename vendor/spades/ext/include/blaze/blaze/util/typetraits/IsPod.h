@@ -85,7 +85,7 @@ namespace blaze {
 */
 template< typename T >
 struct IsPod
-   : public BoolConstant< std::is_pod<T>::value >
+   : public BoolConstant< std::is_trivially_copyable<T>::value >
 {};
 //*************************************************************************************************
 

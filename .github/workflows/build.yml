@@ -45,6 +45,7 @@ jobs:
             mingw-w64-x86_64-gettext-runtime
             mingw-w64-x86_64-libiconv
             mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-tools-git
             zip
 
       - name: Build dependencies
@@ -98,6 +99,7 @@ jobs:
             mingw-w64-clang-aarch64-gettext-runtime
             mingw-w64-clang-aarch64-libiconv
             mingw-w64-clang-aarch64-pkgconf
+            mingw-w64-clang-aarch64-tools
             zip
 
       - name: Build dependencies

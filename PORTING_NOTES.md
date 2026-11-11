@@ -67,6 +67,9 @@ GetOrganelle 在运行时按 `GetOrganelleLib/../GetOrganelleDep/Windows` 查找
   - `rtseq.hpp` 的 `MaskForLastBucket` 在“序列长度恰为 32 的倍数”时返回 `-1ul`（32 位全 1），
     会清掉最后一个 64 位字的高 32 位；改为 `~size_t(0)`
 - `stacktrace.hpp` 使用 `CaptureStackBackTrace`/dbghelp（已有补丁保留）
+- `std::is_pod` 在较新的 libc++ 中已被移除；`binary.hpp`、Blaze 的
+  `IsPod` trait 和 hpcSPAdes MPI 辅助代码改用 `std::is_trivially_copyable`
+  （对二进制序列化和 MPI 传递是合适的约束），恢复 arm64 Clang 构建
 
 Python 层（SPAdes 流水线）：
 - `spades_init.py` 识别 `spades-core.exe`（否则误判为开发目录）

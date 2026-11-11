@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <memory>
 #include <cstdint>
+#include <type_traits>
 
 namespace io {
 
@@ -34,7 +35,7 @@ enum class Encoding {
 // TODO implement special wrapper for pointers and disable direct serialization
 template<typename T>
 static constexpr Encoding GetEncoding() {
-    return !std::is_pod<T>::value ? Encoding::Unknown :
+    return !std::is_trivially_copyable<T>::value ? Encoding::Unknown :
            std::is_floating_point<T>::value || sizeof(T) == 1 || std::is_pointer<T>::value ? Encoding::Raw : //Required because is_signed is true for floats
            std::is_unsigned<T>::value ? Encoding::ULEB128 :
            std::is_signed<T>::value ? Encoding::SLEB128 :
@@ -233,7 +234,7 @@ public:
     }
 
     template <typename T>
-    std::enable_if_t<std::is_pod<T>::value> raw(const T &value) {
+    std::enable_if_t<std::is_trivially_copyable<T>::value> raw(const T &value) {
         os_.write(reinterpret_cast<const char*>(&value), sizeof(T));
     }
 
@@ -244,7 +245,7 @@ public:
     }
 
     template <typename T>
-    std::enable_if_t<std::is_pod<T>::value> raw_array(const T *p, size_t count) {
+    std::enable_if_t<std::is_trivially_copyable<T>::value> raw_array(const T *p, size_t count) {
         os_.write(reinterpret_cast<const char*>(p), count * sizeof(T));
     }
 
@@ -272,7 +273,7 @@ public:
     }
 
     template <typename T>
-    std::enable_if_t<std::is_pod<T>::value> raw(T &value) {
+    std::enable_if_t<std::is_trivially_copyable<T>::value> raw(T &value) {
         is_.read(reinterpret_cast<char*>(&value), sizeof(T));
     }
 
@@ -283,7 +284,7 @@ public:
     }
 
     template <typename T>
-    std::enable_if_t<std::is_pod<T>::value> raw_array(T *p, size_t count) {
+    std::enable_if_t<std::is_trivially_copyable<T>::value> raw_array(T *p, size_t count) {
         is_.read(reinterpret_cast<char*>(p), count * sizeof(T));
     }
 

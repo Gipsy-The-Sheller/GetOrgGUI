@@ -170,32 +170,32 @@ inline void memrecv(void *p, size_t count, int rank, int tag = MPI_ANY_TAG) {
 }
 
 template <typename T>
-std::enable_if_t<std::is_pod<T>::value && !std::is_pointer<T>::value> broadcast(T &v, int root = 0) {
+std::enable_if_t<std::is_trivially_copyable<T>::value && !std::is_pointer<T>::value> broadcast(T &v, int root = 0) {
     membroadcast(&v, sizeof(T), root);
 }
 
 template <typename T, size_t N>
-std::enable_if_t<std::is_pod<T>::value && !std::is_pointer<T>::value> broadcast(std::array<T, N> &v, int root = 0) {
+std::enable_if_t<std::is_trivially_copyable<T>::value && !std::is_pointer<T>::value> broadcast(std::array<T, N> &v, int root = 0) {
     membroadcast(v.deta(), N * sizeof(T), root);
 }
 
 template <typename T>
-std::enable_if_t<std::is_pod<T>::value && !std::is_pointer<T>::value> send(const T &v, int rank, int tag) {
+std::enable_if_t<std::is_trivially_copyable<T>::value && !std::is_pointer<T>::value> send(const T &v, int rank, int tag) {
     memsend(&v, sizeof(T), rank, tag);
 }
 
 template <typename T>
-std::enable_if_t<std::is_pod<T>::value && !std::is_pointer<T>::value> recv(T &v, int rank, int tag = MPI_ANY_TAG) {
+std::enable_if_t<std::is_trivially_copyable<T>::value && !std::is_pointer<T>::value> recv(T &v, int rank, int tag = MPI_ANY_TAG) {
     memrecv(&v, sizeof(T), rank, tag);
 }
 
 template <typename T, size_t N>
-std::enable_if_t<std::is_pod<T>::value && !std::is_pointer<T>::value> send(const std::array<T, N> &v, int rank, int tag = 0) {
+std::enable_if_t<std::is_trivially_copyable<T>::value && !std::is_pointer<T>::value> send(const std::array<T, N> &v, int rank, int tag = 0) {
     memsend(v.data(), N * sizeof(T), rank, tag);
 }
 
 template <typename T, size_t N>
-std::enable_if_t<std::is_pod<T>::value && !std::is_pointer<T>::value> recv(std::array<T, N> &v, int rank, int tag = MPI_ANY_TAG) {
+std::enable_if_t<std::is_trivially_copyable<T>::value && !std::is_pointer<T>::value> recv(std::array<T, N> &v, int rank, int tag = MPI_ANY_TAG) {
     memrecv(v.data(), N * sizeof(T), rank, tag);
 }
 
@@ -1059,7 +1059,7 @@ void broadcast_full_dump(T &data, Serialize &&serialize, Deserialize &&deseriali
 }
 
 template <typename T>
-auto broadcast(T &data, int root = 0) -> decltype(std::declval<std::enable_if_t<!std::is_pod<T>::value, T>>(),
+auto broadcast(T &data, int root = 0) -> decltype(std::declval<std::enable_if_t<!std::is_trivially_copyable<T>::value, T>>(),
                                                   io::binary::BinWrite(declref<std::ostream>(), data),
                                                   io::binary::BinRead(declref<std::istream>(), data),
                                                   void()) {
