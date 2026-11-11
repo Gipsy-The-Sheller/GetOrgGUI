@@ -22,8 +22,9 @@ Inputs → Preprocess → Parameters → Run → Results
 - **Parameters**：Basic 仅保留线程、轮数、k-mer、预设；其余在 Advanced。
 - **Run**：非模态后台任务、实时日志、阶段进度、单一 Cancel（Windows 下
   `taskkill /T /F` 终止 fastp/GetOrganelle 整棵进程树）。
-- **Results**：输出表、FASTA/图/日志预览、fastp before→after reads、
+- **Results**：输出表、FASTA/日志预览、fastp before→after reads、
   warnings、`run.json` provenance；产物路径写入 `yrmpe.result.v1`。
+  GFA/FASTG 可在内置的 Bandage 风格查看器中打开（见下节）。
 
 ## 缩放与外观
 
@@ -31,6 +32,25 @@ Inputs → Preprocess → Parameters → Run → Results
   page title 20 px；控件 padding 3–5 px；默认窗口 1280×800，最小 1024×640。
 - 8 px 间距网格、浅/深色语义 tokens；状态一律“图标 + 文字 + 颜色”。
 - 在 2560×1600 / 150% 缩放屏幕上验证；截图见 `build/gui_*.png`（不提交）。
+
+## 组装图查看器
+
+Results 页的 **Graph** 标签与“Open graph viewer”使用纯 QPainter 实现的
+交互式组装图查看器（`graph_model.py` + `graph_viewer.py`），参考
+Bandage 的视觉语言：
+
+- 每个节点用 5′/3′ 两端点表示，内部弹簧的自然长度与序列长度成正比；
+  连通分量分别布局后再网格排布，避免孤立的长 contig 被压成一个点。
+- 节点是沿端点采样的弯曲多段折线，用 `QLinearGradient` 自定义笔刷描边，
+  带圆角端帽、描边、阴影、选中光晕与高光；覆盖度同时决定颜色和粗细。
+- 支持拖动节点/平移、以光标为中心缩放、按节点 ID 搜索、覆盖度/长度/GC
+  着色、ID/长度/覆盖度标签（自动避让），以及 PNG 导出。
+- 这是查看器而非 Bandage 替代品：不支持 BLAST/NCBI 搜索、插件布局或图
+  编辑；单文件上限 80 MB。超大图或需要 BLAST 时请用 Bandage-NG。
+
+Bandage 引用：Wick RR, Schultz MB, Zobel J, Holt KE. *Bandage:
+interactive visualization of de novo genome assemblies.* Bioinformatics
+2015;31(20):3350–3352. doi:10.1093/bioinformatics/btv383。
 
 ## Windows 优先的具体处理
 
@@ -71,5 +91,7 @@ venv\Scripts\python.exe -m getorganelle_gui.cli run --mode reads ^
 - GUI 仅 x64（PyQt5 无 arm64 wheel）。
 - fastp 为静态链接的 Windows 构建；Linux/macOS 用户请使用各自平台的 fastp。
 - 路径建议不要包含空格；GetOrganelle 内部仍有文本命令拼接。
+- 内置图查看器不含 BLAST/NCBI 搜索、插件布局与图编辑；重图请用
+  Bandage/Bandage-NG。
 - GUI 不是 YR-MPE 的宿主插件本体，但已实现 `ResultSpec`、
   `control_bindings()`、skill 文档与 provenance，可作为插件层接入。

@@ -12,6 +12,13 @@ if str(GUI_ROOT) not in sys.path:
     sys.path.insert(0, str(GUI_ROOT))
 
 from getorganelle_gui.command import build_plan, normalize_kmers, split_extra_args
+from getorganelle_gui.graph_model import (
+    edge_endpoint_sides,
+    layout_graph,
+    layout_graph_with_ends,
+    parse_fastg,
+    parse_gfa,
+)
 from getorganelle_gui.models import (
     MODE_ASSEMBLY,
     MODE_DATABASE,
@@ -362,6 +369,66 @@ class ResultTests(unittest.TestCase):
             self.assertEqual(roundtrip["schema"], "yrmpe.result.v1")
             self.assertEqual(roundtrip["datasets"][0]["items"][0]["item_type"], "sequence")
             self.assertEqual(roundtrip["runs"][0]["method"], "getorganelle-reads")
+
+
+class GraphTests(unittest.TestCase):
+    def test_parse_gfa(self):
+        text = r"""S	3	ACGTACGT	LN:i:8	RC:i:80
+S	4	GGCC	LN:i:4	RC:i:8
+L	3	+	4	-	0M
+"""
+        graph = parse_gfa(text)
+        self.assertEqual(len(graph.nodes), 2)
+        self.assertEqual(len(graph.edges), 1)
+        self.assertEqual(graph.nodes["3"].length, 8)
+        self.assertEqual(graph.nodes["3"].coverage, 10.0)
+        self.assertIn("components", graph.stats())
+
+    def test_parse_fastg(self):
+        text = (
+            ">EDGE_1_length_100_cov_20.5:EDGE_2_length_50_cov_10.0';\n"
+            "ACGT\n"
+            ">EDGE_1_length_100_cov_20.5';\n"
+            "ACGT\n"
+            ">EDGE_2_length_50_cov_10.0;\n"
+            "GGCC\n"
+        )
+        graph = parse_fastg(text)
+        self.assertEqual(len(graph.nodes), 2)
+        self.assertEqual(len(graph.edges), 1)
+        node_id = next(n for n in graph.nodes if n.startswith("EDGE_1"))
+        self.assertEqual(graph.nodes[node_id].coverage, 20.5)
+
+    def test_layout_returns_every_node(self):
+        graph = parse_gfa(
+            "S\t1\tACGT\tLN:i:4\tRC:i:4\n"
+            "S\t2\tGGCC\tLN:i:4\tRC:i:4\n"
+            "L\t1\t+\t2\t+\t0M\n"
+        )
+        positions, note = layout_graph(graph)
+        self.assertEqual(set(positions), {"1", "2"})
+        self.assertIn("nodes", note)
+
+    def test_endpoint_layout_gives_nodes_length_and_direction(self):
+        graph = parse_gfa(
+            "S\t1\tACGTACGTACGT\tLN:i:12\tRC:i:24\n"
+            "S\t2\tGGCC\tLN:i:4\tRC:i:4\n"
+            "L\t1\t+\t2\t-\t0M\n"
+        )
+        centers, ends, note = layout_graph_with_ends(graph)
+        self.assertEqual(set(centers), {"1", "2"})
+        self.assertEqual(set(ends), {"1", "2"})
+        self.assertIn("length-aware", note)
+        for node_id, (start, end) in ends.items():
+            self.assertNotEqual(start, end)
+            midpoint = ((start[0] + end[0]) / 2, (start[1] + end[1]) / 2)
+            self.assertAlmostEqual(centers[node_id][0], midpoint[0])
+            self.assertAlmostEqual(centers[node_id][1], midpoint[1])
+        long_span = abs(ends["1"][1][0] - ends["1"][0][0]) + abs(ends["1"][1][1] - ends["1"][0][1])
+        short_span = abs(ends["2"][1][0] - ends["2"][0][0]) + abs(ends["2"][1][1] - ends["2"][0][1])
+        self.assertGreater(long_span, short_span)
+        edge = graph.edges[0]
+        self.assertEqual(edge_endpoint_sides(graph, edge), (1, 1))
 
 
 class MetadataTests(unittest.TestCase):

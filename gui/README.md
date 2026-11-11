@@ -24,14 +24,43 @@ Inputs → Preprocess → Parameters → Run → Results
 - **Run** — the exact command is shown before execution. The job is
   non-modal, logs stream into the page and the Job Center, and a single
   **Cancel** stops the whole process tree.
-- **Results** — typed output table, FASTA/graph/log preview, warnings,
-  assembled size/GC, and `run.json` provenance. The command and exit code are
-  recorded next to the outputs.
+- **Results** — typed output table, FASTA/log preview, warnings, assembled
+  size/GC, and `run.json` provenance. GFA/FASTG files open in a built-in
+  interactive graph viewer (length-aware layout, curved node tubes,
+  coverage/length/GC colouring, search, drag, zoom/pan, PNG export). The
+  command and exit code are recorded next to the outputs.
 
 The workbench never creates the GetOrganelle output directory before the run:
 GetOrganelle's `--overwrite` removes that folder itself, and an open log file
 inside it would make the removal fail on Windows. Workbench logs live under
 `<workspace>/_workbench/logs/`.
+
+## Assembly graph viewer
+
+The Results page previews `.gfa` and `.fastg` files in a Bandage-inspired
+canvas (`graph_model.py` + `graph_viewer.py`) and can open the same canvas in
+a larger non-modal window.
+
+- **Length is real.** Each segment is represented by its 5′ and 3′ endpoints;
+  an internal spring has a rest length proportional to the sequence length.
+  Connected components are laid out separately and packed into a grid, so a
+  long isolated contig is not reduced to a dot beside a dense component.
+- **Curved multi-segment nodes.** The path between endpoints is sampled into
+  a bent polyline (quadratic bend away from the component centre). It is
+  stroked with a `QLinearGradient` brush over a rounded-cap pen, with an
+  outline, shadow, selection glow and a thin specular highlight. Coverage
+  controls both colour and tube thickness.
+- **Interaction.** Drag nodes or empty space, wheel zoom (cursor-anchored),
+  search by node ID, switch coverage/length/GC colouring, show ID/length/
+  coverage labels (collision-aware), and export PNG.
+- **Limits.** This is a viewer, not a Bandage replacement: no BLAST/NCBI
+  search, no plugin layouts or graph editing, and the in-app reader caps graph
+  files at 80 MB. Use Bandage/Bandage-NG for very large graphs or BLAST.
+
+Bandage citation: Wick RR, Schultz MB, Zobel J, Holt KE. *Bandage:
+interactive visualization of de novo genome assemblies.* Bioinformatics
+2015;31(20):3350–3352. doi:10.1093/bioinformatics/btv383. The active fork is
+[Bandage-NG](https://github.com/asl/BandageNG).
 
 ## Running
 
@@ -103,6 +132,8 @@ gui/
 │  ├─ theme.py           # semantic light/dark tokens and QSS
 │  ├─ widgets.py         # Card, Badge, FileInput, LogView, EmptyState
 │  ├─ preprocess.py      # fastp command builder and report summary
+│  ├─ graph_model.py     # GFA/FASTG parser, endpoint force layout (no Qt)
+│  ├─ graph_viewer.py    # QPainter graph canvas, toolbar, large viewer
 │  ├─ pages/             # Inputs, Preprocess, Parameters, Run, Results
 │  ├─ main_window.py     # rail + pages + inspector + job center
 │  ├─ settings_dialog.py # paths/runtime/theme/asynchronous dependency check

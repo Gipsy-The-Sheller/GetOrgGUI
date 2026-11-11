@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (
     QPlainTextEdit,
     QPushButton,
     QSplitter,
+    QTabWidget,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -26,6 +27,8 @@ from ..models import (
     STATUS_WARNING,
     organelle_label,
 )
+from ..graph_viewer import GraphViewer, GraphViewerDialog
+from ..theme import LIGHT
 from ..widgets import Badge, Card, EmptyState, human_bp, human_size
 from .common import ScrollPage, caption, page_header
 
@@ -38,6 +41,7 @@ class ResultsPage(ScrollPage):
         self.wb = workbench
         self.result = None
         self.items = []
+        self._graph_dialogs = []
         self.add(
             page_header(
                 "Results",
@@ -153,20 +157,33 @@ class ResultsPage(ScrollPage):
         right = Card("Preview")
         preview_header = QHBoxLayout()
         self.preview_label = caption("Select a file to preview it.")
+        self.graph_window_button = QPushButton("Open graph viewer")
+        self.graph_window_button.setEnabled(False)
+        self.graph_window_button.clicked.connect(self._open_large_graph)
         self.open_file_button = QPushButton("Open file")
         self.open_file_button.setEnabled(False)
         self.open_file_button.clicked.connect(self._open_selected_file)
         preview_header.addWidget(self.preview_label, 1)
+        preview_header.addWidget(self.graph_window_button)
         preview_header.addWidget(self.open_file_button)
         right.body.addLayout(preview_header)
         self.preview_stats = caption("")
         right.body.addWidget(self.preview_stats)
+        self.preview_tabs = QTabWidget()
         self.preview = QPlainTextEdit()
         self.preview.setObjectName("Preview")
         self.preview.setReadOnly(True)
         self.preview.setLineWrapMode(QPlainTextEdit.WidgetWidth)
         self.preview.setMinimumHeight(180)
-        right.body.addWidget(self.preview)
+        text_tab = QWidget()
+        text_layout = QVBoxLayout(text_tab)
+        text_layout.setContentsMargins(0, 0, 0, 0)
+        text_layout.addWidget(self.preview)
+        self.preview_tabs.addTab(text_tab, "Text")
+        self.graph_view = GraphViewer(getattr(self.wb, "_tokens", LIGHT))
+        self.preview_tabs.addTab(self.graph_view, "Graph")
+        self.preview_tabs.setTabEnabled(1, False)
+        right.body.addWidget(self.preview_tabs)
         splitter.addWidget(right)
         splitter.setStretchFactor(0, 3)
         splitter.setStretchFactor(1, 2)
@@ -249,12 +266,19 @@ class ResultsPage(ScrollPage):
             self.table.selectRow(0)
         else:
             self.preview.setPlainText("No output files were produced.")
+            self.preview_tabs.setCurrentIndex(0)
+            self.preview_tabs.setTabEnabled(1, False)
+            self.graph_window_button.setEnabled(False)
 
     def clear(self) -> None:
         self.result = None
         self.items = []
         self.table.setRowCount(0)
         self.preview.clear()
+        self.graph_view.clear()
+        self.preview_tabs.setCurrentIndex(0)
+        self.preview_tabs.setTabEnabled(1, False)
+        self.graph_window_button.setEnabled(False)
         self.content.hide()
         self.empty_state.show()
 
@@ -303,7 +327,47 @@ class ResultsPage(ScrollPage):
         else:
             self.preview_stats.setText(item.detail or "")
         self.preview.setPlainText(self._read_preview(item.path))
+        is_graph = Path(item.path).suffix.lower() in (".gfa", ".fastg")
+        if is_graph:
+            ok, message = self.graph_view.load_file(item.path)
+            self.preview_tabs.setTabEnabled(1, ok)
+            self.graph_window_button.setEnabled(ok)
+            if ok:
+                self.preview_tabs.setCurrentIndex(1)
+                self.preview_stats.setText(message + " · drag to pan · wheel to zoom · drag a node")
+            else:
+                self.preview_tabs.setCurrentIndex(0)
+                self.preview_stats.setText(message)
+        else:
+            self.graph_view.clear()
+            self.preview_tabs.setTabEnabled(1, False)
+            self.graph_window_button.setEnabled(False)
+            self.preview_tabs.setCurrentIndex(0)
         self.wb.set_selected_item(item)
+
+    def set_tokens(self, tokens) -> None:
+        self.graph_view.set_tokens(tokens)
+        for dialog in list(self._graph_dialogs):
+            dialog.viewer.set_tokens(tokens)
+
+    def _open_large_graph(self) -> None:
+        rows = self.table.selectionModel().selectedRows()
+        if not rows:
+            return
+        row = rows[0].row()
+        if not (0 <= row < len(self.items)):
+            return
+        path = self.items[row].path
+        if Path(path).suffix.lower() not in (".gfa", ".fastg"):
+            return
+        dialog = GraphViewerDialog(path, getattr(self.wb, "_tokens", LIGHT), self)
+        self._graph_dialogs.append(dialog)
+        dialog.destroyed.connect(
+            lambda: self._graph_dialogs.remove(dialog)
+            if dialog in self._graph_dialogs
+            else None
+        )
+        dialog.show()
 
     def _open_selected_file(self) -> None:
         rows = self.table.selectionModel().selectedRows()

@@ -623,6 +623,7 @@ class MainWindow(QMainWindow):
 
     def _apply_log_tokens(self) -> None:
         self.run_page.log_view.set_tokens(self._tokens)
+        self.results_page.set_tokens(self._tokens)
         if self._console_dialog is not None:
             self._console_dialog.set_tokens(self._tokens)
 

@@ -94,7 +94,9 @@ set PYTHONPATH=%ROOT%gui
 - Bowtie2 的 Windows 构建不支持 mmap / 共享内存，`--mm` 会被包装器自动移除。
 - `--time-limit` 在 Windows 上不生效。
 - 输入/输出路径建议不要包含空格（GetOrganelle 内部命令拼接未全面加引号）。
-- Bandage 可视化是可选的；未安装时自动跳过。
+- GUI 自带 GFA/FASTG 图查看器（长度感知布局、弯曲节点、覆盖度着色）；
+  它不含 BLAST/NCBI 搜索，重图或需要 BLAST 时请用 Bandage/Bandage-NG。
+- Bandage 仍可作为 GetOrganelle 主流程的外部可视化工具；未安装时自动跳过。
 - samtools 不参与 GetOrganelle 主流程。
 - GUI 目前仅支持 x64（PyQt5 无 arm64 轮子）；arm64 包提供完整命令行工具与 headless CLI。
 
