@@ -1,0 +1,7 @@
+numpy==2.5.4
+gekko==1.3.3
+requests==2.34.2
+
+# Optional: GenBank annotation helpers (Utilities/gb_to_tbl.py etc.).
+# Biopython has no Windows arm64 wheel yet, so it is skipped there.
+biopython==1.88; platform_machine != "ARM64"

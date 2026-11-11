@@ -1,0 +1,120 @@
+name: build-windows
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PKG_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('1.8.0.1-{0}', github.sha) }}
+
+jobs:
+  build-x64:
+    name: Windows x86_64
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          cache: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-libgnurx
+            mingw-w64-x86_64-libsystre
+            mingw-w64-x86_64-libtre
+            mingw-w64-x86_64-gettext
+            mingw-w64-x86_64-libiconv
+            mingw-w64-x86_64-pkgconf
+            zip
+
+      - name: Build dependencies
+        run: bash ./scripts/build_all.sh x86_64
+
+      - name: Package
+        run: bash ./scripts/package.sh x86_64 "${{ env.PKG_VERSION }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GetOrganelle-Windows-x64
+          path: |
+            build/ci-x64/*.zip
+            build/ci-x64/*.sha256
+          if-no-files-found: error
+
+  build-arm64:
+    name: Windows arm64
+    # GitHub-hosted Windows arm64 runners (public preview for public repos)
+    runs-on: windows-11-arm
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANGARM64
+          update: true
+          cache: true
+          install: >-
+            mingw-w64-clang-aarch64-toolchain
+            mingw-w64-clang-aarch64-cmake
+            mingw-w64-clang-aarch64-ninja
+            mingw-w64-clang-aarch64-zlib
+            mingw-w64-clang-aarch64-libgnurx
+            mingw-w64-clang-aarch64-libsystre
+            mingw-w64-clang-aarch64-libtre
+            mingw-w64-clang-aarch64-gettext-runtime
+            mingw-w64-clang-aarch64-libiconv
+            mingw-w64-clang-aarch64-pkgconf
+            zip
+
+      - name: Build dependencies
+        run: bash ./scripts/build_all.sh arm64
+
+      - name: Package
+        run: bash ./scripts/package.sh arm64 "${{ env.PKG_VERSION }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GetOrganelle-Windows-arm64
+          path: |
+            build/ci-arm64/*.zip
+            build/ci-arm64/*.sha256
+          if-no-files-found: error
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-x64, build-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/*.zip
+            artifacts/*.sha256
+          generate_release_notes: true

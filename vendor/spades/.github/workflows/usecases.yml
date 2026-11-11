@@ -1,0 +1,518 @@
+name: SPAdes usecases
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
+      - next
+    tags:
+      - '*'
+    paths-ignore:
+      - 'docs/**'
+      - 'mkdocs.yml'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - 'mkdocs.yml'
+
+env:
+  BUILD_TYPE: Release
+  BUILD_DIR: ${{github.workspace}}/build
+  INSTALL_DIR: ${{github.workspace}}/spades
+  SRC_DIR: ${{github.workspace}}/src
+  PKG: SPAdes-*-Linux
+
+jobs:
+  build:
+    runs-on: self-hosted
+    name: '🚧 Build SPAdes'
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: sccache-${{env.BUILD_TYPE}}
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B ${{env.BUILD_DIR}}
+          -S ${{env.SRC_DIR}}
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build ${{env.BUILD_DIR}}
+          -j16
+          -t package
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
+
+  mc-bcereus-truseq-100x:
+    name: 'Multicell B.cereus TruSeq 100x'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/Multicell_B.cereus_TruSeq_100x.info
+
+  nextera-lmonocytogenes:
+    name: 'Nextera L.monocytogenes'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/Nextera_L.monocytogenes.info
+
+  contigs-ecoli-jgi-lane7:
+    name: 'Contigs E.coli JGI lane 7'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/Contigs_E.coli_JGI_lane7.info
+
+  fullrun-mruber-jgi-lane9:
+    name: 'Full run M.ruber JGI lane 9'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/Full_run_M.ruber_JGI_lane9_prenormalized.info
+
+  iontorrnent-ecoli-k12:
+    name: 'IonTorrent E.coli K12'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/IonTorrent_E.coli_K12.info
+
+  mate-pair-bfaecium:
+    name: 'Mate-pairs B.faecium'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/Mate-pairs_B.faecium.info
+
+  sc-pheparinus-jgi-lane7:
+    name: 'Single-cell P.heparinus JGI lane 7'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/Single-cell_P.heparinus_JGI_lane7_prenormalized.info
+
+  plasmid-ccallunae:
+    name: 'plasmidSPAdes C.callunae'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/plasmidSPAdes_C.callunae.info
+
+  single-reads-ecoli-deeptrench:
+    name: 'Single reads E.coli Deeptrench'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/Single_reads_E.coli_deeptrench.info
+
+  pacbio-mruber:
+    name: 'PacBio M.ruber'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/PacBio_M.ruber.info
+
+  saves-ecoli-100k:
+    name: 'Saves E.coli 100K'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/Saves_E.coli_100K.info
+
+  saves-ecoli-ucsd-lane1:
+    name: 'Saves E.coli UCSD lane 1'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/Saves_E.coli_UCSD_lane1.info
+
+  metaspades-jgi-150:
+    name: 'metaSPAdes JGI 150'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/metaSPAdes_JGI_150.info
+
+  metaviral-test:
+    name: 'metaviralSPAdes ERR525599'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/metaviral_test.info

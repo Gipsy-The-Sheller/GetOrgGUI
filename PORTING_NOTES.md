@@ -1,0 +1,151 @@
+# GetOrganelle 原生 Windows 移植说明
+
+本目录把 GetOrganelle 及其依赖迁移到原生 Windows（MinGW-w64），运行时不依赖 MSYS2 bash，也不依赖 `msys-2.0.dll`。
+
+## 目录结构
+
+```
+E:\Codes\getorg_win\
+├─ GetOrganelle\                  GetOrganelle 1.8.0.1（含 Windows 补丁）
+│  └─ GetOrganelleDep\Windows\    GetOrganelle 自动查找依赖的位置
+│     ├─ SPAdes\                  SPAdes 4.3.0-dev，原生 MinGW-w64 构建
+│     ├─ bowtie2\                 Bowtie2 2.5.5，原生 MinGW-w64 构建
+│     ├─ ncbi-blast\              NCBI BLAST+ 2.17.0 官方 Windows 版
+│     └─ samtools\bin\            samtools 1.25（静态链接；GetOrganelle 流程本身不用）
+├─ venv\                          Python 3.12 虚拟环境（numpy / Biopython / gekko / requests）
+├─ build\                         构建目录、日志、测试数据
+├─ run_get_organelle_reads.bat
+├─ run_get_organelle_assembly.bat
+└─ run_get_organelle_config.bat
+```
+
+GetOrganelle 在运行时按 `GetOrganelleLib/../GetOrganelleDep/Windows` 查找依赖，因此依赖必须放在 `GetOrganelle\GetOrganelleDep\Windows` 下。
+
+## 组件版本
+
+| 组件 | 版本 | 来源 |
+| --- | --- | --- |
+| GetOrganelle | 1.8.0.1 | GitHub Kinggerm/GetOrganelle（含本目录补丁） |
+| SPAdes | 4.3.0-dev | 源码 `E:\Codes\spades`，MinGW-w64 原生构建 |
+| Bowtie2 | 2.5.5 | 源码构建，静态链接 |
+| samtools / htslib | 1.25 | 源码构建，静态链接 |
+| BLAST+ | 2.17.0 | NCBI 官方 `x64-win64` 构建 |
+| Python | 3.12 | `venv\Scripts\python.exe` |
+
+## SPAdes 原生 Windows 改动
+
+核心目标：用 MinGW-w64 直接编译，生成的 `.exe` 只依赖 `libgcc/libstdc++/libgomp/libwinpthread`，不再需要 MSYS2 运行时。
+
+新增 `src/common/utils/win32compat/`：
+- `sys/mman.h` + `mmap/munmap/msync/madvise/getpagesize`（Win32 文件映射实现，处理 64K 对齐）
+- `sys/resource.h`（`getrlimit/setrlimit/getrusage`，内存上限只记录不强制）
+- `sys/wait.h`、`syslog.h`、`glob.h`、`sysexits.h`
+- `mkstemp/mkdtemp/getline/strsep/ctime_r/localtime_r/srandom/sync` 等 POSIX 兼容函数
+- `win32_types.h`：BSD `uint` typedef（全局 force-include）
+- `easel_compat.h`：HMMER/easel 的 `mmap`、`getuid` 等
+- BWA：`shm_open` 桩（SPAdes 不使用 `bwa shm`）、`*rand48`、`waitpid/kill`、禁用 POSIX pipe 打开方式
+
+构建选项：
+- `-D_FILE_OFFSET_BITS=64`（大于 2 GB 的 k-mer 索引）
+- `-mno-ms-bitfields`（保持 Itanium ABI 位域布局，`Sequence::LongRep` 必须为 16 字节）
+- 全局 force-include `win32_types.h`；链接 `dbghelp`、`psapi`
+
+源码层面：
+- 大量 `std::filesystem::path` → `std::string` 的显式 `.string()` 转换（Windows 下 `path::value_type` 是 `wchar_t`）
+- 捆绑 LLVM Support：排除缺失的 Windows `*.inc` 实现，改写 `raw_ostream`/`YAMLTraits` 的 path 输出；
+  新增 `ext/src/llvm/llvm_win_support.cpp` 提供 `sys::fs`、`sys::path`、`Process`、`Threading`、
+  `Signals`、`Program` 的最小 Win32 实现
+- 捆绑 HMMER：排除 `hmmd*` 守护进程代码；easel 的 mmap/getuid/syslog 兼容
+- BamTools：MinGW 下不使用 `dllimport`（静态库），并链接 `ws2_32`
+- BWA：`shm` 桩、`*rand48`、`waitpid/kill`、POSIX pipe 打开方式禁用；`getrusage` 放入独立的
+  `win_getrusage.c`，避免 `spades-bwa` / `spades-core` 重复定义
+- Blaze：MinGW 平台宏与 WIN32/WIN64 互斥判断修正；为 `size_t`/`ptrdiff_t` 启用 `Limits` 特化
+- 32 位 `long` 兼容：
+  - `LinkRecord` 的无效标记由 `-1ul` 改为 `~uint64_t(0)`
+    （MinGW 的 `unsigned long` 是 32 位，MSYS/Cygwin 是 64 位；原写法会让“无效记录”被当成有效，
+    多出顶点并生成非法短边，最终在 coverage filling 阶段断言失败）
+  - `rtseq.hpp` 的 `MaskForLastBucket` 在“序列长度恰为 32 的倍数”时返回 `-1ul`（32 位全 1），
+    会清掉最后一个 64 位字的高 32 位；改为 `~size_t(0)`
+- `stacktrace.hpp` 使用 `CaptureStackBackTrace`/dbghelp（已有补丁保留）
+
+Python 层（SPAdes 流水线）：
+- `spades_init.py` 识别 `spades-core.exe`（否则误判为开发目录）
+- `support.process_readline` 使用 `errors="replace"`，避免 Windows 本地化输出非 UTF-8 导致崩溃
+- `compress_all.py` 在无 `pigz/gzip` 时使用 Python `gzip` 模块
+- 配置模板中的 `load_from`、`sewage_matrix`、`series_analysis` 路径统一转成正斜杠
+  （Boost property_tree 会把反斜杠当转义符）
+
+构建/安装目录：`E:\Codes\getorg_win\build\spades-native` → `E:\Codes\getorg_win\deps\SPAdes` → 拷贝到
+`E:\Codes\getorg_win\GetOrganelle\GetOrganelleDep\Windows\SPAdes`。
+
+> 原来的 `E:\Codes\spades\build_spades` 是 MSYS2 工具链的旧构建，未删除；新的原生构建在
+> `E:\Codes\getorg_win\build\spades-native`，二者互不影响。源码补丁都在 `E:\Codes\spades` 工作树中。
+
+## Bowtie2 包装器改动
+
+Bowtie2 的 `bowtie2` 是 Perl 脚本。Windows 下需要：
+- `bowtie2.bat` 调用 `perl`（Strawberry Perl 或 Git 自带 MSYS Perl 均可）；
+- 包装器已修补：
+  - 识别 `$^O eq "msys"` 也按 Windows 处理；
+  - `glob()` 对反斜杠路径做直接文件存在性回退；
+  - 自动移除 `--mm`（Windows 构建未启用 `BOWTIE_MM`，否则 aligner 会直接异常退出）。
+
+`bowtie2-build.bat` / `bowtie2-inspect.bat` 使用 `python`（启动器会把 venv 放到 PATH 前面）。
+
+## GetOrganelle 改动摘要
+
+- `platform.system() == "Windows"` → `SYSTEM_NAME = "Windows"`（主脚本、assembly、config 及 Utilities）
+- `detect_bowtie2_path/detect_blast_path/detect_spades_path` 支持 `.exe` / `.bat`
+- `spades.py`、`slim_graph.py` 通过 `sys.executable` 调用（Windows 不能直接执行 `.py`）
+- `zip_file/unzip` 改为纯 Python（`gzip`/`tarfile`），不依赖 `tar/gunzip/head`
+- `os.system("cp/head/ln/mv ...")` 改为 `shutil.copy` / `os.link` / Python 读写
+- `os.rename` → `os.replace`（Windows 的 rename 不覆盖已存在文件）
+- Bandage 检查加空路径保护；`&& mv` 拆成 Python 移动
+- Windows 无 `SIGALRM`，`--time-limit` 装饰器退化为直接调用
+- `Utilities/slim_graph.py`：Windows 下路径字符合法集加入 `:` 和 `\`（盘符/反斜杠），
+  否则 `E:\...\K65` 会被判为“非法字符 `:`”
+- `GetOrganelleLib/seq_parser.py`：`SequenceList(file, indexed=True)` 中 `read_fasta()`
+  经 `append()` 已填好索引，原代码随后又断言“标签不在索引中”，必然触发 `AssertionError`；
+  改为重建索引后再查重（该上游 bug 与平台无关，仅在“SPAdes scaffolds 补洞”路径触发）
+
+## 使用
+
+初始化数据库（已执行过 `embplant_pt,embplant_mt`，位于 `C:\Users\<user>\.GetOrganelle`）：
+
+```bat
+run_get_organelle_config.bat -a embplant_pt,embplant_mt
+```
+
+运行 reads 流程：
+
+```bat
+run_get_organelle_reads.bat -1 R1.fq -2 R2.fq -F embplant_pt -o out -R 15 -k 21,45,65,85,105 -t 8
+```
+
+运行 assembly 流程：
+
+```bat
+run_get_organelle_assembly.bat -a assembly.fasta -F embplant_pt -o out -t 8
+```
+
+三个 `.bat` 会把 `venv\Scripts`、bowtie2、ncbi-blast、SPAdes\bin 放到 PATH 前面。
+
+## 验证结果（2026-11-11）
+
+| 测试 | 结果 |
+| --- | --- |
+| `spades.py --test`（native SPAdes 自检） | 通过（exit 0，产出 contigs） |
+| K45 预组装，`more.fq`（80,000 reads） | 通过；de Bruijn 顶点数 29889，与 MSYS2 对照完全一致（修复前 29890 并崩溃） |
+| 完整 GetOrganelle reads 流程（embplant_pt，`-k 21,45,65 -R 1`） | 通过（exit 0，日志 0 条 ERROR），输出 6 scaffolds |
+| GetOrganelle assembly 流程（`-g` GFA 输入） | 通过（exit 0），输出 6 scaffolds |
+| `spades-core.exe` DLL 依赖 | 仅 KERNEL32/dbghelp/msvcrt + 随附的 libgcc/libstdc++/libgomp/libwinpthread，**无 msys-2.0.dll** |
+| `bowtie2-align-s.exe` / `samtools.exe` DLL 依赖 | 仅系统 DLL，**无 msys-2.0.dll** |
+
+## 已知限制
+
+- `bowtie2` 包装器需要 Perl；`bowtie2-build` 需要 PATH 中有 `python`（启动器已处理）。
+- Windows 版 Bowtie2 不支持 mmap / shared memory；`--mm` 会被包装器静默移除。
+- 输出/输入路径建议不要包含空格（GetOrganelle 内部命令拼接未全面加引号）。
+- Bandage 可视化是可选的；未安装时自动跳过。
+- `--time-limit` 在 Windows 上不生效。
+- samtools 不参与 GetOrganelle 主流程，仅作为额外组件提供。

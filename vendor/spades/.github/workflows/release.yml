@@ -1,0 +1,260 @@
+name: SPAdes release snapshot
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '*'
+    paths-ignore:
+      - 'docs/**'
+      - 'mkdocs.yml'
+
+env:
+  INSTALL_DIR: ${{github.workspace}}/spades
+  PKG_LINUX: SPAdes-*-Linux
+  PKG_MAC: SPAdes-*-Darwin
+
+jobs:
+  # We build inside a ManyLinux container, but run checks outside
+  build-linux:
+    name: '🐧 Build SPAdes inside ManyLinux 2.28 x86-64 container'
+
+    runs-on: self-hosted
+    # We use userns-remap on VM side
+    container:
+      image: quay.io/pypa/manylinux_2_28_x86_64
+
+    env:
+      BUILD_TYPE: Release
+      BUILD_DIR: './build'
+      SRC_DIR: './src'
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install dependencies'
+        run: >
+          dnf install -y bzip2-devel
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B $BUILD_DIR
+          -S $SRC_DIR
+          -DSPADES_USE_NCBISDK=ON -DSPADES_ENABLE_PROJECTS=release
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build $BUILD_DIR
+          -j16
+          -t package
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-linux
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG_LINUX}}.tar.gz
+
+  spades-1k-checks-linux:
+    name: '🚬 E. coli 1k smoke checks'
+    runs-on: self-hosted
+    needs: build-linux
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-linux
+          path: ${{env.INSTALL_DIR}}
+
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG_LINUX}}.tar.gz
+
+      - name: '1k multi-cell'
+        run: >
+          $INSTALL_DIR/$PKG_LINUX/bin/spades.py --test
+
+      - name: '1k single-cell'
+        run: >
+          $INSTALL_DIR/$PKG_LINUX/bin/spades.py --sc --test
+
+      - name: '1k meta'
+        run: >
+          $INSTALL_DIR/$PKG_LINUX/bin/metaspades.py --test
+
+      - name: '1k plasmid'
+        run: >
+          $INSTALL_DIR/$PKG_LINUX/bin/plasmidspades.py --test
+
+      - name: '1k rna'
+        run: >
+          $INSTALL_DIR/$PKG_LINUX/bin/rnaspades.py --test
+
+      - name: '1k corona'
+        run: >
+          $INSTALL_DIR/$PKG_LINUX/bin/coronaspades.py --test
+
+  build-mac:
+    strategy:
+      matrix:
+        include:
+          - os: macos-15-intel
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+
+    env:
+      BUILD_TYPE: Release
+      BUILD_DIR: './build'
+      SRC_DIR: './src'
+
+    name: '🍎 Build SPAdes for macOS'
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install dependencies'
+        run: >
+          brew install bzip2 mmv openmpi
+
+      - name: '💩 Fix gcc / MacSDK trash'
+        run: >
+          rm -f /opt/homebrew/Cellar/gcc@13/*/lib/gcc/13/gcc/aarch64-apple*/13/include-fixed/AvailabilityInternal.h
+          rm -f /usr/local/Cellar/gcc@13/*/lib/gcc/13/gcc/x86_64-apple*/13/include-fixed/AvailabilityInternal.h
+          
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B $BUILD_DIR
+          -S $SRC_DIR
+          -DSPADES_USE_NCBISDK=ON -DSPADES_ENABLE_PROJECTS=release
+          -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13
+          -DSPADES_STATIC_BUILD=ON
+          -DOpenMP_CXX_FLAGS:STRING=-fopenmp -DOpenMP_CXX_LIB_NAMES:STRING=gomp -DOpenMP_C_FLAGS:STRING=-fopenmp -DOpenMP_C_LIB_NAMES:STRING=gomp -DOpenMP_gomp_LIBRARY=libgomp.a
+          -DCMAKE_EXE_LINKER_FLAGS="-Wl,-ld_classic" -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-ld_classic" -DCMAKE_MODULE_LINKER_FLAGS="-Wl,-ld_classic"
+          -DBZIP2_LIBRARIES=$(brew --prefix bzip2)/lib/libbz2.a
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build $BUILD_DIR
+          -j16
+          -t package && mmv '${{env.BUILD_DIR}}/SPAdes-*-Darwin.tar.gz' '${{env.BUILD_DIR}}/SPAdes-#1-Darwin-${{ matrix.arch }}.tar.gz'
+
+      - name: '🗂  Inspect directory before downloading artifacts'
+        run: >
+          ls -alFR ${{env.BUILD_DIR}}/*.tar.gz
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-mac-${{ matrix.arch }}
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG_MAC}}-${{ matrix.arch }}.tar.gz
+
+  spades-1k-checks-mac:
+    name: '🚬 E. coli 1k smoke checks'
+    strategy:
+      matrix:
+        include:
+          - os: macos-15-intel
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+
+    needs: build-mac
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-mac-${{ matrix.arch }}
+          path: ${{env.INSTALL_DIR}}
+
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG_MAC}}*.tar.gz
+
+      - name: '1k multi-cell'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/spades.py --test
+
+      - name: '1k single-cell'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/spades.py --sc --test
+
+      - name: '1k meta'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/metaspades.py --test
+
+      - name: '1k plasmid'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/plasmidspades.py --test
+
+      - name: '1k rna'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/rnaspades.py --test
+
+      - name: '1k corona'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/coronaspades.py --test
+
+  # Upload continuous build
+  upload:
+      name: '🗂  Create release and upload artifacts'
+      needs:
+        - spades-1k-checks-mac
+        - spades-1k-checks-linux
+      runs-on: ubuntu-latest
+      steps:
+      - name: '⚙️ Install dependencies'
+        run: sudo apt-get install -y libfuse2
+      - name: '📥 Download artifacts'
+        uses: actions/download-artifact@v4
+      - name: '🗂  Inspect directory after downloading artifacts'
+        run: ls -alFR
+      - name: '🚀 Create release and upload artifacts'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            wget -q https://github.com/TheAssassin/pyuploadtool/releases/download/continuous/pyuploadtool-x86_64.AppImage
+            chmod +x pyuploadtool-x86_64.AppImage
+            ./pyuploadtool-x86_64.AppImage **/${{env.PKG_MAC}}*.tar.gz **/${{env.PKG_LINUX}}*.tar.gz

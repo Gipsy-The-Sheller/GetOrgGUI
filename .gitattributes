@@ -1,0 +1,16 @@
+* text=auto
+
+# Windows launchers must keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Build scripts and upsteam sources must stay LF
+*.sh text eol=lf
+*.patch text eol=lf
+Makefile text eol=lf
+*.mk text eol=lf
+*.py text eol=lf
+*.pl text eol=lf
+bowtie2 text eol=lf
+bowtie2-build text eol=lf
+bowtie2-inspect text eol=lf

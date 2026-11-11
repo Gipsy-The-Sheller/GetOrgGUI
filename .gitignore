@@ -1,0 +1,15 @@
+# Local build / tooling artifacts
+/build/
+/deps/
+/downloads/
+/src/
+/venv/
+/spades_test/
+/stage/
+
+# GetOrganelle runtime dependency binaries (built by CI or scripts)
+/GetOrganelle/GetOrganelleDep/
+
+# Python caches
+__pycache__/
+*.py[cod]
