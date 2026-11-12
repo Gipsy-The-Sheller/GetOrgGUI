@@ -54,6 +54,10 @@ if [[ "$HOST_OS" == windows ]]; then
 fi
 
 cp -a "$STAGE/bowtie2" "$DEPS/bowtie2"
+if [[ -f "$ROOT/vendor/bowtie2/third_party/simde/COPYING" ]]; then
+  cp -a "$ROOT/vendor/bowtie2/third_party/simde/COPYING" \
+    "$DEPS/bowtie2/SIMDE-LICENSE"
+fi
 cp -a "$STAGE/fastp" "$DEPS/fastp"
 if [[ "$HOST_OS" == linux ]]; then
   # fastp links ISA-L dynamically; ship the matching soname with an

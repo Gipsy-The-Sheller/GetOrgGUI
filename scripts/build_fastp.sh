@@ -24,11 +24,14 @@ cd "$SRC"
 "$MAKE" clean >/dev/null 2>&1 || true
 
 if [[ "$HOST_OS" == windows ]]; then
+  # LLD (CLANGARM64) rejects GNU ld's --no-as-needed; a static link does
+  # not need it.
   "$MAKE" -j"$JOBS" \
     SHELL="$SHELL_WIN" \
     CXX="$CXX" \
     CXXFLAGS="-std=c++11 -pthread -g -O2 -I./src" \
     LIBS="-lisal -ldeflate -lpthread -ldbghelp -lws2_32 -lpsapi" \
+    STATIC_FLAGS="-static -pthread" \
     static
   cp -a fastp.exe "$PREFIX/"
 elif [[ "$HOST_OS" == macos ]]; then

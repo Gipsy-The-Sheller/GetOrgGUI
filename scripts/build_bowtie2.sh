@@ -59,6 +59,7 @@ else
     AR="$AR" \
     ARCH="$TARGET_ARCH" \
     POPCNT_CAPABILITY="$POPCNT_CAPABILITY" \
+    SSE_AVX2=0 \
     all
 
   rm -rf "$PREFIX"

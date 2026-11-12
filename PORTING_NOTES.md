@@ -41,8 +41,10 @@ GetOrganelle 在运行时按 `GetOrganelleLib/../GetOrganelleDep/Windows` 查找
 GetOrganelle 使用的依赖目录名（`Windows`、`linux`、`macOS`）。
 
 - **SPAdes**：Linux 使用 GCC；macOS 使用 Apple Clang + Homebrew `libomp`
-  （CMake 显式传入 `OpenMP_CXX_FLAGS`/`OpenMP_omp_LIBRARY`）以及 Homebrew
-  `bzip2`。构建关闭 jemalloc/mimalloc。SPAdes 自带测试目录中的
+  （CMake 显式传入 `OpenMP_CXX_FLAGS`/`OpenMP_omp_LIBRARY`，并把
+  `libomp/include` 加入 C/C++ 头文件路径、`-L… -lomp` 加入可执行文件
+  链接参数），以及 Homebrew `bzip2`。构建关闭 jemalloc/mimalloc。SPAdes
+  自带测试目录中的
   `find_package(MPI)` 只在启用 hpcSPAdes 时执行，避免无 MPI 或 MPI 安装损坏
   时配置失败。
 - **fastp**：上游 Windows 补丁中的 `unistd.h`、`cxxabi.h` 改名为
@@ -50,10 +52,14 @@ GetOrganelle 使用的依赖目录名（`Windows`、`linux`、`macOS`）。
   `Sleep(1)` 改为 `fastp_usleep()` 宏；`<windows.h>` 只在 Windows 引入。
   Linux 的 ISA-L 只有共享库，fastp 以 `$ORIGIN` rpath 链接，发行包内附带
   `libisal.so.2`；libdeflate 使用静态库。macOS 优先链接 Homebrew 的
-  `libisal.a`/`libdeflate.a`。
+  `libisal.a`/`libdeflate.a`。Windows 的静态链接去掉 `--no-as-needed`
+  （LLD 不识别该 GNU ld 参数）。
 - **Bowtie2 / samtools**：使用正常的 POSIX Makefile/configure 分支；
-  Bowtie2 在 arm64 上关闭 POPCNT 并使用 `-fopenmp-simd`，samtools 只构建
-  htslib 静态库。
+  Linux 显式设置 `SSE_AVX2=0`，避免 GCC 11 不支持 `__builtin_cpu_supports
+  ("x86-64-v3")` 的 v256 变体；arm64 上关闭 POPCNT，macOS 上不传
+  `-fopenmp-simd`（Apple Clang 不支持）。仓库内补齐 Bowtie2 v2.5.5 的
+  `third_party/simde` 子模块（commit `f6a0b3b`），供 arm64 的 SSE 兼容层
+  使用。samtools 只构建 htslib 静态库。
 - **BLAST+**：Linux x64 使用官方 `x64-linux`，macOS arm64 使用官方
   `aarch64-macosx`，SHA-256 在 `scripts/fetch_blast.sh` 中固定。
 - **发行包**：Linux/macOS 使用 `tar.gz`，Windows 使用 `zip`；macOS 打包时
