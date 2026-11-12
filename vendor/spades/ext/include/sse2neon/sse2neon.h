@@ -100,6 +100,9 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#if defined(_WIN32)
+#include <malloc.h>
+#endif
 
 /* Architecture-specific build options */
 /* FIXME: #pragma GCC push_options is only available on GCC */
@@ -1774,7 +1777,11 @@ FORCE_INLINE __m128 _mm_div_ss(__m128 a, __m128 b)
 // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_free
 FORCE_INLINE void _mm_free(void *addr)
 {
+#if defined(_WIN32)
+    _aligned_free(addr);
+#else
     free(addr);
+#endif
 }
 
 // Macro: Get the flush zero bits from the MXCSR control and status register.
@@ -1964,9 +1971,13 @@ FORCE_INLINE void *_mm_malloc(size_t size, size_t align)
         return malloc(size);
     if (align == 2 || (sizeof(void *) == 8 && align == 4))
         align = sizeof(void *);
+#if defined(_WIN32)
+    return _aligned_malloc(size, align);
+#else
     if (!posix_memalign(&ptr, align, size))
         return ptr;
     return NULL;
+#endif
 }
 
 // Conditionally store 8-bit integer elements from a into memory using mask

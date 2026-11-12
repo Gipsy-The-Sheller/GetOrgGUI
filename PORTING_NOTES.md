@@ -70,6 +70,8 @@ GetOrganelle 在运行时按 `GetOrganelleLib/../GetOrganelleDep/Windows` 查找
 - `std::is_pod` 在较新的 libc++ 中已被移除；`binary.hpp`、Blaze 的
   `IsPod` trait 和 hpcSPAdes MPI 辅助代码改用 `std::is_trivially_copyable`
   （对二进制序列化和 MPI 传递是合适的约束），恢复 arm64 Clang 构建
+- sse2neon 在 Windows 上改用 `_aligned_malloc/_aligned_free` 实现
+  `_mm_malloc/_mm_free`，避免依赖未声明的 POSIX `posix_memalign`
 
 Python 层（SPAdes 流水线）：
 - `spades_init.py` 识别 `spades-core.exe`（否则误判为开发目录）
