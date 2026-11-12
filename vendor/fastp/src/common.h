@@ -1,6 +1,11 @@
 #ifdef _WIN32
 // #define NO_CXXABI  // 注释掉，让程序使用兼容层实现
 // #define NO_UNISTD  // 注释掉，让程序使用兼容层实现
+#include <windows.h>
+#define fastp_usleep(usec) Sleep(1)
+#else
+#include <unistd.h>
+#define fastp_usleep(usec) usleep(usec)
 #endif
 
 

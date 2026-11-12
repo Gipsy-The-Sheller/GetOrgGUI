@@ -2,13 +2,14 @@
 
 > **Windows-first.** 本 GUI 以 Windows 10/11 x64 为首要目标开发与测试：
 > 原生 PyQt5、Windows 路径与进程树取消、`python.exe/pythonw.exe` 分离、
-> fastp/GetOrganelle 子进程均在 Windows 上验证。Linux/macOS 理论上可运行
-> `getorganelle_gui` 的核心模块，但未作为发布目标。
+> fastp/GetOrganelle 子进程均在 Windows 上验证。Linux 与 macOS 发行包
+> 也包含 GUI（依赖解析、`fastp` 可执行文件名与 GetOrganelleDep 目录已
+> 按平台适配），但 Windows 仍是主要支持平台。
 
 ## 这是什么
 
-GetOrganelle Workbench 是原生 Windows 版 GetOrganelle 的桌面前端，按
-YR-MPE 的插件契约与 UI 审计标准设计：
+GetOrganelle Workbench 是原生 GetOrganelle 的桌面前端，按 YR-MPE 的
+插件契约与 UI 审计标准设计：
 
 ```
 Inputs → Preprocess → Parameters → Run → Results
@@ -73,8 +74,9 @@ interactive visualization of de novo genome assemblies.* Bioinformatics
 - 取消任务使用 `taskkill /PID <pid> /T /F`，覆盖 SPAdes/fastp 子进程。
 - GetOrganelle 在 UTF-8 模式下解码本地化 cmd 输出会崩溃，已改为只检查
   子进程返回码（`pipe_control_func.executable`）。
-- PyQt5 无 Windows arm64 轮子：GUI 面向 x64；arm64 包保留完整命令行与
-  headless CLI。x64 Python 可在 Windows 11 ARM64 上通过模拟运行 GUI。
+- PyQt5 无 Windows arm64 轮子：GUI 面向 x64；Windows arm64 包保留完整
+  命令行与 headless CLI。x64 Python 可在 Windows 11 ARM64 上通过模拟运行
+  GUI。Linux x64 和 macOS arm64 有 PyQt5 轮子，发行包包含 GUI。
 
 ## 运行与测试
 

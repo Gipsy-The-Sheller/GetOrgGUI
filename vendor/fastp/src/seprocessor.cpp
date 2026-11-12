@@ -1,7 +1,7 @@
 #include "seprocessor.h"
 #include "fastqreader.h"
 #include <iostream>
-#include "unistd.h"
+#include "win_unistd.h"
 #include <functional>
 #include <thread>
 #include <memory.h>
@@ -10,7 +10,6 @@
 #include "htmlreporter.h"
 #include "adaptertrimmer.h"
 #include "polyx.h"
-#include <windows.h>
 
 SingleEndProcessor::SingleEndProcessor(Options* opt){
     mOptions = opt;
@@ -371,7 +370,7 @@ void SingleEndProcessor::readerTask()
             while( mPackReadCounter - mPackProcessedCounter > PACK_IN_MEM_LIMIT){
                 //cerr<<"sleep"<<endl;
                 slept++;
-                Sleep(1);
+                fastp_usleep(1000);
             }
             readNum += count;
             // if the writer threads are far behind this reader, sleep and wait
@@ -379,7 +378,7 @@ void SingleEndProcessor::readerTask()
             if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
                 while(mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) {
                     slept++;
-                    Sleep(1);
+                    fastp_usleep(1000);
                 }
             }
             // reset count to 0
@@ -436,7 +435,7 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
                 break;
             }
         } else {
-            Sleep(1);
+            fastp_usleep(1000);
         }
     }
     input->setConsumerFinished();        

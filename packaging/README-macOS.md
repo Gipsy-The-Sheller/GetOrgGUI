@@ -6,7 +6,7 @@ the GetOrganelle Workbench GUI.
 
 ## Requirements
 
-- macOS 12 or newer on Apple Silicon
+- macOS 15 or newer on Apple Silicon
 - Python 3.10+ (python.org, Homebrew, or Xcode Command Line Tools)
 - Perl (included with macOS)
 
@@ -31,7 +31,7 @@ The launchers put the bundled SPAdes, Bowtie2, and BLAST+ directories on
 
 ## Notes
 
-- The package is built on GitHub's `macos-14` arm64 runner. SPAdes requires
+- The package is built on GitHub's `macos-15` arm64 runner. SPAdes requires
   OpenMP; the build uses Homebrew `libomp`, and the required `libomp.dylib`
   is bundled next to the SPAdes executables.
 - The GUI uses PyQt5 (GPLv3/commercial). The command-line toolkit does not

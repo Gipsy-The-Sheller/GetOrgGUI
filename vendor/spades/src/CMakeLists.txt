@@ -50,6 +50,9 @@ if (WIN32)
   # Backtrace support in utils/stacktrace.hpp.
   link_libraries(dbghelp)
   link_libraries(ws2_32)
+  # Clang/LLD does not pull winpthreads in implicitly (GCC does via
+  # libstdc++); BWA and other C targets use pthread_* directly.
+  link_libraries(pthread)
 endif()
 
 # Uncomment for gprof profiling

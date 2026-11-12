@@ -1,7 +1,7 @@
 #include "peprocessor.h"
 #include "fastqreader.h"
 #include <iostream>
-#include "unistd.h"
+#include "win_unistd.h"
 #include <functional>
 #include <thread>
 #include <memory.h>
@@ -11,8 +11,6 @@
 #include "jsonreporter.h"
 #include "htmlreporter.h"
 #include "polyx.h"
-
-#include <windows.h>
 
 PairEndProcessor::PairEndProcessor(Options* opt){
     mOptions = opt;
@@ -800,13 +798,13 @@ void PairEndProcessor::readerTask(bool isLeft)
                 while(mLeftPackReadCounter - mPackProcessedCounter > PACK_IN_MEM_LIMIT){
                     //cerr<<"sleep"<<endl;
                     slept++;
-                    Sleep(1);
+                    fastp_usleep(1000);
                 }
             } else {
                 while(mRightPackReadCounter - mPackProcessedCounter > PACK_IN_MEM_LIMIT){
                     //cerr<<"sleep"<<endl;
                     slept++;
-                    Sleep(1);
+                    fastp_usleep(1000);
                 }
             }
             readNum += count;
@@ -815,7 +813,7 @@ void PairEndProcessor::readerTask(bool isLeft)
             if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
                 while( (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) || (mRightWriter && mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT) ){
                     slept++;
-                    Sleep(1);
+                    fastp_usleep(1000);
                 }
             }
             // reset count to 0
@@ -940,7 +938,7 @@ void PairEndProcessor::interleavedReaderTask()
             while(mLeftPackReadCounter - mPackProcessedCounter > PACK_IN_MEM_LIMIT){
                 //cerr<<"sleep"<<endl;
                 slept++;
-                Sleep(1);
+                fastp_usleep(1000);
             }
             readNum += count;
             // if the writer threads are far behind this producer, sleep and wait
@@ -948,7 +946,7 @@ void PairEndProcessor::interleavedReaderTask()
             if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
                 while( (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) || (mRightWriter && mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT) ){
                     slept++;
-                    Sleep(1);
+                    fastp_usleep(1000);
                 }
             }
             // reset count to 0
@@ -1007,7 +1005,7 @@ void PairEndProcessor::processorTask(ThreadConfig* config)
         } else if(inputRight->isProducerFinished() && !inputRight->canBeConsumed()) {
             break;
         } else {
-            Sleep(1);
+            fastp_usleep(1000);
         }
     }
     inputLeft->setConsumerFinished();

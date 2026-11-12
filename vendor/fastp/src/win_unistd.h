@@ -83,7 +83,7 @@ extern "C" {
 #endif
 
 #else
-//  Windows ƽ̨ʹñ׼ͷļ
+// Use the toolchain's real unistd.h, skipping this compatibility header.
 #include <unistd.h>
 #endif
 

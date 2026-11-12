@@ -1,6 +1,8 @@
-# GetOrganelle 原生 Windows 移植说明
+# GetOrganelle 原生跨平台移植说明
 
-本目录把 GetOrganelle 及其依赖迁移到原生 Windows（MinGW-w64），运行时不依赖 MSYS2 bash，也不依赖 `msys-2.0.dll`。
+本目录把 GetOrganelle 及其依赖迁移到原生 Windows（MinGW-w64）、Linux 和
+macOS（Apple Silicon）。Windows 版本运行时不依赖 MSYS2 bash，也不依赖
+`msys-2.0.dll`；Linux/macOS 版本使用系统工具链构建。
 
 ## 目录结构
 
@@ -31,6 +33,35 @@ GetOrganelle 在运行时按 `GetOrganelleLib/../GetOrganelleDep/Windows` 查找
 | samtools / htslib | 1.25 | 源码构建，静态链接 |
 | BLAST+ | 2.17.0 | NCBI 官方 `x64-win64` 构建 |
 | Python | 3.12 | `venv\Scripts\python.exe` |
+
+## Linux / macOS 构建
+
+`scripts/common.sh` 通过 `uname` 识别 `HOST_OS=windows|linux|macos`，自动
+选择工具链、`stage/<platform>-<arch>/`、`build/ci-<platform>-<arch>/` 以及
+GetOrganelle 使用的依赖目录名（`Windows`、`linux`、`macOS`）。
+
+- **SPAdes**：Linux 使用 GCC；macOS 使用 Apple Clang + Homebrew `libomp`
+  （CMake 显式传入 `OpenMP_CXX_FLAGS`/`OpenMP_omp_LIBRARY`）以及 Homebrew
+  `bzip2`。构建关闭 jemalloc/mimalloc。SPAdes 自带测试目录中的
+  `find_package(MPI)` 只在启用 hpcSPAdes 时执行，避免无 MPI 或 MPI 安装损坏
+  时配置失败。
+- **fastp**：上游 Windows 补丁中的 `unistd.h`、`cxxabi.h` 改名为
+  `win_unistd.h`、`win_cxxabi.h`，避免在 POSIX 上遮蔽系统头文件；
+  `Sleep(1)` 改为 `fastp_usleep()` 宏；`<windows.h>` 只在 Windows 引入。
+  Linux 的 ISA-L 只有共享库，fastp 以 `$ORIGIN` rpath 链接，发行包内附带
+  `libisal.so.2`；libdeflate 使用静态库。macOS 优先链接 Homebrew 的
+  `libisal.a`/`libdeflate.a`。
+- **Bowtie2 / samtools**：使用正常的 POSIX Makefile/configure 分支；
+  Bowtie2 在 arm64 上关闭 POPCNT 并使用 `-fopenmp-simd`，samtools 只构建
+  htslib 静态库。
+- **BLAST+**：Linux x64 使用官方 `x64-linux`，macOS arm64 使用官方
+  `aarch64-macosx`，SHA-256 在 `scripts/fetch_blast.sh` 中固定。
+- **发行包**：Linux/macOS 使用 `tar.gz`，Windows 使用 `zip`；macOS 打包时
+  用 `install_name_tool` 把 Homebrew 绝对 dylib 路径改为 `@loader_path`，
+  并重新做 ad-hoc 签名；Linux 包附带 `libisal.so.2`。
+- **GUI**：PyQt5 在 Linux x64、macOS arm64 与 Windows x64 有轮子；
+  Windows arm64 无 PyQt5 轮子，自动跳过 GUI 依赖。GUI 的依赖目录与可执行
+  文件名已按平台适配。
 
 ## SPAdes 原生 Windows 改动
 
@@ -78,6 +109,8 @@ GetOrganelle 在运行时按 `GetOrganelleLib/../GetOrganelleDep/Windows` 查找
   attribute pragma 会触发 `-Werror`，该警告与 lexy 代码本身无关
 - 捆绑的 spoa 补齐 libc++ 不再间接包含的头文件：`alignment_engine.cpp` 增加
   `<cstdlib>`（`std::abs`），`graph.cpp` 增加 `<iterator>`（`std::inserter`）
+- CLANGARM64 的 Clang/LLD 不会像 GCC 那样通过 libstdc++ 隐式链接
+  winpthreads；SPAdes 的 C 目标（如 `spades-bwa`）显式链接 `pthread`
 - CLANGARM64 缺少 `sched.h`/`sched_yield`：新增
   `win32compat/sched_compat.hpp`（Windows 用 `SwitchToThread`/`Sleep(0)`，
   POSIX 转发到 `sched_yield`），并替换 `read_processor.hpp`、ionhammer
@@ -191,6 +224,17 @@ GUI 使用 PyQt5（与 YR-MPE 一致），因此只有 x64 轮子；arm64 包保
 | GUI 单元测试（command/validation/results）与离屏 smoke | 通过 |
 | `spades-core.exe` DLL 依赖 | 仅 KERNEL32/dbghelp/msvcrt + 随附的 libgcc/libstdc++/libgomp/libwinpthread，**无 msys-2.0.dll** |
 | `bowtie2-align-s.exe` / `samtools.exe` DLL 依赖 | 仅系统 DLL，**无 msys-2.0.dll** |
+
+Linux 本地验证（WSL Ubuntu 24.04 x86_64；CI 目标为 Ubuntu 22.04）：
+
+| 测试 | 结果 |
+| --- | --- |
+| SPAdes `--test` | 通过（exit 0，产出 assembly graph） |
+| fastp / Bowtie2 / samtools / BLAST+ | `fastp 1.0.1`、`bowtie2-align-s 2.5.5`、`samtools 1.25`、`blastn/tblastn 2.17.0+` 均可运行 |
+| fastp 动态依赖 | 仅 `libisal.so.2` 非系统库；该文件（解引用后）已放入 `GetOrganelleDep/linux/fastp/`，rpath 为 `$ORIGIN` |
+| `scripts/package.sh x86_64` | 通过，生成 57 MB `GetOrganelle-Linux-x64-*.tar.gz` 与 SHA256 |
+| 打包后 GetOrganelle assembly 流程 | 成功启动并完成 graph 处理/slimming；demo graph 无目标细胞器 contig（预期），工具链与 BLAST 数据库检测正常 |
+| 打包后 headless CLI `inspect --json` | 通过，输出 `yrmpe.result.v1` |
 
 ## fastp（预处理阶段）
 

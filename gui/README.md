@@ -1,8 +1,9 @@
 # GetOrganelle Workbench
 
-**Windows-first.** A PyQt5 desktop front-end for the native Windows
-GetOrganelle port, designed against the YR-MPE workbench standard (plugin
-lifecycle, typed results, provenance, and the UI audit constraints). See
+**Windows-first.** A PyQt5 desktop front-end for the native GetOrganelle
+builds, designed against the YR-MPE workbench standard (plugin lifecycle,
+typed results, provenance, and the UI audit constraints). Windows is the
+primary support target; Linux and macOS packages also ship the GUI. See
 [NOTE.md](NOTE.md) for the concise Windows-first note.
 
 ```
@@ -151,8 +152,15 @@ or directly:
 venv\Scripts\python.exe gui\launcher.pyw
 ```
 
-`setup_venv.bat` installs `gui\requirements.txt` (PyQt5) automatically on x64.
-PyQt5 has no Windows arm64 wheel; the arm64 package stays command-line only.
+Linux/macOS:
+
+```bash
+./GetOrganelleGUI.sh
+```
+
+`setup_venv.bat` / `setup_venv.sh` install `gui/requirements.txt` (PyQt5)
+automatically. PyQt5 has no Windows arm64 wheel, so the Windows arm64 package
+stays command-line only; Linux x64 and macOS arm64 packages include the GUI.
 
 ## Headless / agent surface
 

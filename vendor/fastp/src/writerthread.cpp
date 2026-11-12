@@ -1,8 +1,7 @@
 #include "writerthread.h"
 #include "util.h"
 #include <memory.h>
-#include "unistd.h"
-#include <windows.h>
+#include "win_unistd.h"
 
 WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
     mOptions = opt;
@@ -38,7 +37,7 @@ bool WriterThread::setInputCompleted() {
 void WriterThread::output(){
     SingleProducerSingleConsumerList<string*>* list =  mBufferLists[mWorkingBufferList];
     if(!list->canBeConsumed()) {
-        Sleep(1);
+        fastp_usleep(1000);
     } else {
         string* str = list->consume();
         mWriter1->write(str->data(), str->length());

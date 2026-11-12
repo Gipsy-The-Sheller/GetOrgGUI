@@ -66,7 +66,9 @@ if [[ "$HOST_OS" == linux ]]; then
     ISAL_DIR=/usr/lib/x86_64-linux-gnu
   fi
   if [[ -n "$ISAL_DIR" && -f "$ISAL_DIR/libisal.so.2" ]]; then
-    cp -a "$ISAL_DIR/libisal.so.2" "$DEPS/fastp/"
+    # -L: libisal.so.2 is normally a symlink to libisal.so.2.0.31; the
+    # package needs the real file, not a dangling symlink.
+    cp -Lf "$ISAL_DIR/libisal.so.2" "$DEPS/fastp/libisal.so.2"
   fi
   if [[ -f /usr/share/doc/libisal-dev/copyright ]]; then
     cp -a /usr/share/doc/libisal-dev/copyright "$DEPS/fastp/ISA-L-LICENSE"
