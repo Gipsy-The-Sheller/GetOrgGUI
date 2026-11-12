@@ -63,14 +63,15 @@ GetOrganelle 使用的依赖目录名（`Windows`、`linux`、`macOS`）。
   `std::result_of`。源码快照中的 `configure`/`version.sh`/`bowtie2*`
   等脚本丢失了可执行位，构建与打包时显式 `chmod +x`。samtools 只构建
   htslib 静态库。
-- **BLAST+**：Linux x64 使用官方 `x64-linux`，macOS arm64 使用官方
-  `aarch64-macosx`，SHA-256 在 `scripts/fetch_blast.sh` 中固定。
+- **BLAST+**：Linux x64 使用官方 `x64-linux`，Linux arm64 使用官方
+  `aarch64-linux`，macOS arm64 使用官方 `aarch64-macosx`，SHA-256 在
+  `scripts/fetch_blast.sh` 中固定。
 - **发行包**：Linux/macOS 使用 `tar.gz`，Windows 使用 `zip`；macOS 打包时
   用 `install_name_tool` 把 Homebrew 绝对 dylib 路径改为 `@loader_path`，
   并重新做 ad-hoc 签名；Linux 包附带 `libisal.so.2`。
 - **GUI**：PyQt5 在 Linux x64、macOS arm64 与 Windows x64 有轮子；
-  Windows arm64 无 PyQt5 轮子，自动跳过 GUI 依赖。GUI 的依赖目录与可执行
-  文件名已按平台适配。
+  Windows arm64 与 Linux arm64 无 PyQt5 轮子，自动跳过 GUI 依赖，只提供
+  命令行/headless CLI。GUI 的依赖目录与可执行文件名已按平台适配。
 
 ## SPAdes 原生 Windows 改动
 

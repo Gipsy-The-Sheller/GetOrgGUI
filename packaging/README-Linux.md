@@ -1,12 +1,14 @@
-# GetOrganelle — Linux x86_64
+# GetOrganelle — Linux (x86_64 / arm64)
 
 This package contains a native Linux build of GetOrganelle 1.8.0.1, SPAdes
 4.3.0, Bowtie2 2.5.5, fastp 1.0.1, samtools 1.25, NCBI BLAST+ 2.17.0, and
-the GetOrganelle Workbench GUI.
+the GetOrganelle Workbench GUI. Both x86_64 and arm64 packages are built on
+Ubuntu 22.04.
 
 ## Requirements
 
-- Ubuntu 22.04 LTS or a distribution with glibc 2.35+
+- Ubuntu 22.04 LTS or a distribution with glibc 2.35+ on the matching
+  architecture
 - Python 3.10+ with `venv` (`sudo apt install python3-venv python3-pip`)
 - Perl (for the Bowtie2 wrapper)
 
@@ -33,7 +35,9 @@ The launchers put the bundled SPAdes, Bowtie2, and BLAST+ directories on
 
 - The package is built on Ubuntu 22.04 in CI and is intended for glibc 2.35
   or newer. Older distributions may need a source build.
-- The GUI uses PyQt5 (GPLv3/commercial). The command-line toolkit does not
-  require Qt.
-- BLAST+ is the official NCBI Linux x64 build.
+- Use the package matching your CPU architecture: `x86_64` or `arm64`.
+- The GUI uses PyQt5 (GPLv3/commercial). The x86_64 package includes it; the
+  arm64 package is command-line/headless only because PyQt5 has no
+  linux_aarch64 wheel. The command-line toolkit does not require Qt.
+- BLAST+ is the official NCBI Linux build for the matching architecture.
 - See `SOURCE_MANIFEST.md` for component versions and source locations.

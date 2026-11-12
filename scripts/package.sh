@@ -66,8 +66,11 @@ if [[ "$HOST_OS" == linux ]]; then
   if command -v pkg-config >/dev/null 2>&1; then
     ISAL_DIR="$(pkg-config --variable=libdir libisal 2>/dev/null || true)"
   fi
-  if [[ -z "$ISAL_DIR" && -d /usr/lib/x86_64-linux-gnu ]]; then
-    ISAL_DIR=/usr/lib/x86_64-linux-gnu
+  if [[ -z "$ISAL_DIR" ]]; then
+    MULTIARCH="$(gcc -print-multiarch 2>/dev/null || true)"
+    if [[ -n "$MULTIARCH" && -d "/usr/lib/$MULTIARCH" ]]; then
+      ISAL_DIR="/usr/lib/$MULTIARCH"
+    fi
   fi
   if [[ -n "$ISAL_DIR" && -f "$ISAL_DIR/libisal.so.2" ]]; then
     # -L: libisal.so.2 is normally a symlink to libisal.so.2.0.31; the
@@ -160,7 +163,13 @@ fi
 GIT_COMMIT="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
 case "$HOST_OS" in
   windows) BLAST_DESC="x64-win64 (x64 emulation on Windows arm64)" ;;
-  linux)   BLAST_DESC="x64-linux" ;;
+  linux)
+    if [[ "$TARGET_ARCH" == x86_64 ]]; then
+      BLAST_DESC="x64-linux"
+    else
+      BLAST_DESC="aarch64-linux"
+    fi
+    ;;
   macos)   BLAST_DESC="aarch64-macosx" ;;
 esac
 cat > "$DEST/SOURCE_MANIFEST.md" <<EOF

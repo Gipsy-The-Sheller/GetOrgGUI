@@ -1,4 +1,4 @@
 # Qt binding used by the GetOrganelle Workbench.
-# PyQt5 matches YR-MPE.  There is no win_arm64 wheel, so the GUI is skipped
-# on Windows ARM64; Linux and macOS (including Apple Silicon) have wheels.
-PyQt5==5.15.11; platform_machine != "ARM64"
+# PyQt5 matches YR-MPE.  There are no win_arm64 or linux_aarch64 wheels, so
+# the GUI is skipped there; Windows x64, Linux x64 and macOS arm64 have wheels.
+PyQt5==5.15.11; platform_machine != "ARM64" and (sys_platform != "linux" or platform_machine != "aarch64")

@@ -159,8 +159,9 @@ Linux/macOS:
 ```
 
 `setup_venv.bat` / `setup_venv.sh` install `gui/requirements.txt` (PyQt5)
-automatically. PyQt5 has no Windows arm64 wheel, so the Windows arm64 package
-stays command-line only; Linux x64 and macOS arm64 packages include the GUI.
+automatically. PyQt5 has no Windows arm64 or Linux arm64 wheel, so those
+packages stay command-line only; Windows x64, Linux x64 and macOS arm64
+packages include the GUI.
 
 ## Headless / agent surface
 

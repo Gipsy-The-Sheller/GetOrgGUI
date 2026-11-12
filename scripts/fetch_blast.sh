@@ -25,6 +25,10 @@ case "$HOST_OS/$TARGET_ARCH" in
     BLAST_PLATFORM="x64-linux"
     BLAST_SHA256="3888112d8207831aa47371d93583c601f058f88b5db22dc782438b039a3a411b"
     ;;
+  linux/aarch64)
+    BLAST_PLATFORM="aarch64-linux"
+    BLAST_SHA256="cb9ac252a1ac8767d90b0bf0a38486f3cb94f71ef9b6b8d194ded19b30250daf"
+    ;;
   macos/aarch64)
     BLAST_PLATFORM="aarch64-macosx"
     BLAST_SHA256="8d6739fa133107bce91dbb6b143ec993c9983416244fe502f9c36d585850dc00"
@@ -81,8 +85,9 @@ On Windows 11 ARM64 they run through the built-in x64 emulation.
 EOF
     ;;
   linux)
-    cat > "$PREFIX/ARCHITECTURE.txt" <<'EOF'
-These are the official NCBI BLAST+ Linux x64 binaries.
+    cat > "$PREFIX/ARCHITECTURE.txt" <<EOF
+These are the official NCBI BLAST+ Linux ${ARCH_LABEL} binaries
+(${BLAST_PLATFORM}).
 EOF
     ;;
   macos)

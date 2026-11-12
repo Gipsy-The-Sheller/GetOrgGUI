@@ -3,7 +3,8 @@
 [中文](#中文)
 
 Native builds of [GetOrganelle](https://github.com/Kinggerm/GetOrganelle) and
-its toolchain for **Windows x86_64/arm64, Linux x86_64, and macOS arm64**. The
+its toolchain for **Windows x86_64/arm64, Linux x86_64/arm64, and macOS
+arm64**. The
 Windows packages run without MSYS2/Cygwin; Linux and macOS use their native
 toolchains.
 
@@ -15,6 +16,7 @@ Actions matrix that produces:
 | Windows x86_64 | MSYS2 `MINGW64` (GCC) | `GetOrganelle-Windows-x64-*.zip` |
 | Windows arm64 | MSYS2 `CLANGARM64` (Clang/LLD) | `GetOrganelle-Windows-arm64-*.zip` |
 | Linux x86_64 | Ubuntu 22.04 (GCC) | `GetOrganelle-Linux-x64-*.tar.gz` |
+| Linux arm64 | Ubuntu 22.04 arm64 (GCC) | `GetOrganelle-Linux-arm64-*.tar.gz` |
 | macOS arm64 | Apple Clang + Homebrew libomp | `GetOrganelle-macOS-arm64-*.tar.gz` |
 
 Bundled components: SPAdes 4.3.0, Bowtie2 2.5.5, fastp 1.0.1,
@@ -30,7 +32,8 @@ documentation.
 `msys-2.0.dll`；Linux 与 macOS（Apple Silicon）版本直接用系统工具链构建。
 
 仓库自带完整源码、构建脚本和 GitHub Actions 工作流，可自动构建并打包
-Windows x86_64、Windows arm64、Linux x86_64 与 macOS arm64 四个版本。
+Windows x86_64、Windows arm64、Linux x86_64、Linux arm64 与 macOS arm64
+五个版本。
 
 ### 组件版本
 
@@ -41,7 +44,7 @@ Windows x86_64、Windows arm64、Linux x86_64 与 macOS arm64 四个版本。
 | Bowtie2 | 2.5.5 | 原生构建（MinGW-w64 / GCC / Apple Clang） |
 | fastp | 1.0.1 | 原生构建，静态链接（可选预处理） |
 | samtools / htslib | 1.25 | 原生构建，静态链接 |
-| NCBI BLAST+ | 2.17.0 | 官方 Windows x64 / Linux x64 / macOS arm64 二进制 |
+| NCBI BLAST+ | 2.17.0 | 官方 Windows x64 / Linux x64 / Linux arm64 / macOS arm64 二进制 |
 | Python | 3.10+ | numpy / gekko / requests |
 
 ### 架构支持
@@ -51,6 +54,7 @@ Windows x86_64、Windows arm64、Linux x86_64 与 macOS arm64 四个版本。
 | Windows x86_64 | MSYS2 `MINGW64`（GCC） | 全部组件原生构建 |
 | Windows arm64 | MSYS2 `CLANGARM64`（Clang/LLVM） | SPAdes / Bowtie2 / samtools 原生 arm64；BLAST+ 使用官方 x64 版本（Windows 11 x64 模拟） |
 | Ubuntu 22.04 x86_64 | GCC / CMake / Ninja | 全部组件原生构建；fastp 的 ISA-L 动态库随包分发 |
+| Ubuntu 22.04 arm64 | GCC / CMake / Ninja | 全部组件原生 arm64 构建；使用官方 aarch64 BLAST+ |
 | macOS arm64 | Apple Clang + Homebrew libomp | 全部组件原生 arm64；需 glibc 之外的系统库由 macOS 提供 |
 
 Linux 与 macOS 的构建脚本会自动识别平台，并把依赖放入
@@ -102,14 +106,15 @@ export TARGET_ARCH=x86_64
 arm64 构建在 Windows 11 ARM64 的 MSYS2 `CLANGARM64` shell 中进行，设置
 `TARGET_ARCH=arm64` 后执行同样的命令。
 
-#### Ubuntu 22.04
+#### Ubuntu 22.04（x86_64 / arm64）
 
 ```bash
 sudo apt-get install -y build-essential cmake ninja-build pkg-config \
   zlib1g-dev libbz2-dev libisal-dev libdeflate-dev perl curl zip
-./scripts/build_all.sh x86_64
-./scripts/package.sh x86_64
+./scripts/build_all.sh x86_64    # arm64 机器上改为 arm64
+./scripts/package.sh x86_64      # arm64 机器上改为 arm64
 # 生成 build/ci-linux-x64/GetOrganelle-Linux-x64-*.tar.gz
+# 或   build/ci-linux-arm64/GetOrganelle-Linux-arm64-*.tar.gz
 ```
 
 #### macOS（Apple Silicon）
@@ -129,8 +134,8 @@ brew install cmake ninja bzip2 libomp isa-l libdeflate pkg-config
 `.github/workflows/build.yml` 定义：
 
 - 推送到 `main` / `master`、Pull Request、手动触发：构建 Windows x86_64、
-  Windows arm64、Linux x86_64、macOS arm64，并上传对应压缩包及 SHA256。
-- 推送 `v*` 标签：构建完成后自动创建 GitHub Release 并附带四个发行包。
+  Windows arm64、Linux x86_64、Linux arm64、macOS arm64，并上传对应压缩包及 SHA256。
+- 推送 `v*` 标签：构建完成后自动创建 GitHub Release 并附带五个发行包。
 
 > arm64 任务使用 GitHub 托管的 `windows-11-arm` 运行器。公开仓库可免费使用；
 > 私有仓库请确认账户/计划是否包含 arm64 标准运行器，或配置自托管运行器。
@@ -164,8 +169,9 @@ Preprocess → Parameters → Run → Results）。它按 YR-MPE 的插件契约
 按节点长度/弯曲多段折线绘制，支持覆盖度着色、搜索、拖动、缩放与 PNG 导出。
 查看器还可用内置 BLAST+ 对用户提供的 GenBank 参考做 `blastn`（全量）或
 `tblastn`（注释 CDS）筛选，并按 E 值/一致性/比对长度/不同基因数高亮候选
-叶绿体 contig；详见 `gui/README.md` 与 `gui/NOTE.md`（Windows-first，但
-Linux/macOS 发行包也包含 GUI）。
+叶绿体 contig；详见 `gui/README.md` 与 `gui/NOTE.md`（Windows-first；
+Windows x64、Linux x64、macOS arm64 发行包含 GUI，Windows arm64 与
+Linux arm64 仅命令行/headless CLI）。
 
 同一套模型还提供 headless / agent 接口：
 
