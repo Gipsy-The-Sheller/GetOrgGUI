@@ -67,8 +67,8 @@ jobs:
         with:
           name: GetOrganelle-Windows-x64
           path: |
-            build/ci-x64/*.zip
-            build/ci-x64/*.sha256
+            build/ci-x64/GetOrganelle-Windows-x64-*.zip
+            build/ci-x64/GetOrganelle-Windows-x64-*.zip.sha256
           if-no-files-found: error
 
   build-arm64:
@@ -120,8 +120,8 @@ jobs:
         with:
           name: GetOrganelle-Windows-arm64
           path: |
-            build/ci-arm64/*.zip
-            build/ci-arm64/*.sha256
+            build/ci-arm64/GetOrganelle-Windows-arm64-*.zip
+            build/ci-arm64/GetOrganelle-Windows-arm64-*.zip.sha256
           if-no-files-found: error
 
   build-linux:
@@ -159,8 +159,8 @@ jobs:
         with:
           name: GetOrganelle-Linux-x64
           path: |
-            build/ci-linux-x64/*.tar.gz
-            build/ci-linux-x64/*.sha256
+            build/ci-linux-x64/GetOrganelle-Linux-x64-*.tar.gz
+            build/ci-linux-x64/GetOrganelle-Linux-x64-*.tar.gz.sha256
           if-no-files-found: error
 
   build-linux-arm64:
@@ -199,8 +199,8 @@ jobs:
         with:
           name: GetOrganelle-Linux-arm64
           path: |
-            build/ci-linux-arm64/*.tar.gz
-            build/ci-linux-arm64/*.sha256
+            build/ci-linux-arm64/GetOrganelle-Linux-arm64-*.tar.gz
+            build/ci-linux-arm64/GetOrganelle-Linux-arm64-*.tar.gz.sha256
           if-no-files-found: error
 
   build-macos:
@@ -235,8 +235,8 @@ jobs:
         with:
           name: GetOrganelle-macOS-arm64
           path: |
-            build/ci-macos-arm64/*.tar.gz
-            build/ci-macos-arm64/*.sha256
+            build/ci-macos-arm64/GetOrganelle-macOS-arm64-*.tar.gz
+            build/ci-macos-arm64/GetOrganelle-macOS-arm64-*.tar.gz.sha256
           if-no-files-found: error
 
   gui-tests:
