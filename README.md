@@ -1,4 +1,29 @@
-# GetOrganelle 原生跨平台移植（Windows / Linux / macOS）
+# GetOrganelle Native Cross-Platform Port
+
+[中文](#中文)
+
+Native builds of [GetOrganelle](https://github.com/Kinggerm/GetOrganelle) and
+its toolchain for **Windows x86_64/arm64, Linux x86_64, and macOS arm64**. The
+Windows packages run without MSYS2/Cygwin; Linux and macOS use their native
+toolchains.
+
+The repository ships complete source snapshots, build scripts, and a GitHub
+Actions matrix that produces:
+
+| Platform | Toolchain | Package |
+| --- | --- | --- |
+| Windows x86_64 | MSYS2 `MINGW64` (GCC) | `GetOrganelle-Windows-x64-*.zip` |
+| Windows arm64 | MSYS2 `CLANGARM64` (Clang/LLD) | `GetOrganelle-Windows-arm64-*.zip` |
+| Linux x86_64 | Ubuntu 22.04 (GCC) | `GetOrganelle-Linux-x64-*.tar.gz` |
+| macOS arm64 | Apple Clang + Homebrew libomp | `GetOrganelle-macOS-arm64-*.tar.gz` |
+
+Bundled components: SPAdes 4.3.0, Bowtie2 2.5.5, fastp 1.0.1,
+samtools/htslib 1.25, NCBI BLAST+ 2.17.0, and the PyQt5 Workbench GUI.
+See [中文](#中文) below for the full build, packaging, and usage
+documentation.
+
+## 中文
+
 
 把 [GetOrganelle](https://github.com/Kinggerm/GetOrganelle) 及其依赖移植到
 多个原生平台：Windows 版本不需要 MSYS2 / Cygwin bash，所有可执行文件都不依赖
@@ -7,19 +32,19 @@
 仓库自带完整源码、构建脚本和 GitHub Actions 工作流，可自动构建并打包
 Windows x86_64、Windows arm64、Linux x86_64 与 macOS arm64 四个版本。
 
-## 组件版本
+### 组件版本
 
 | 组件 | 版本 | 构建方式 |
 | --- | --- | --- |
 | GetOrganelle | 1.8.0.1 | 纯 Python（含 Windows 补丁） |
-| SPAdes | 4.3.0 | MinGW-w64 原生构建 |
-| Bowtie2 | 2.5.5 | MinGW-w64 原生构建，静态运行时 |
-| fastp | 1.0.1 | MinGW-w64 原生构建，静态链接（可选预处理） |
-| samtools / htslib | 1.25 | MinGW-w64 原生构建，静态链接 |
-| NCBI BLAST+ | 2.17.0 | 官方 Windows x64 二进制 |
+| SPAdes | 4.3.0 | 原生构建（MinGW-w64 / GCC / Apple Clang） |
+| Bowtie2 | 2.5.5 | 原生构建（MinGW-w64 / GCC / Apple Clang） |
+| fastp | 1.0.1 | 原生构建，静态链接（可选预处理） |
+| samtools / htslib | 1.25 | 原生构建，静态链接 |
+| NCBI BLAST+ | 2.17.0 | 官方 Windows x64 / Linux x64 / macOS arm64 二进制 |
 | Python | 3.10+ | numpy / gekko / requests |
 
-## 架构支持
+### 架构支持
 
 | 目标 | 工具链 | 说明 |
 | --- | --- | --- |
@@ -31,7 +56,7 @@ Windows x86_64、Windows arm64、Linux x86_64 与 macOS arm64 四个版本。
 Linux 与 macOS 的构建脚本会自动识别平台，并把依赖放入
 `GetOrganelle/GetOrganelleDep/linux` 或 `.../macOS`（GetOrganelle 自身的命名）。
 
-## 仓库结构
+### 仓库结构
 
 ```
 .
@@ -55,9 +80,9 @@ Linux 与 macOS 的构建脚本会自动识别平台，并把依赖放入
 `GetOrganelle/GetOrganelleDep/`、`build/`、`stage/`、`venv/` 等运行/构建产物
 不会提交到仓库。
 
-## 本地构建
+### 本地构建
 
-### Windows（MSYS2）
+#### Windows（MSYS2）
 
 在 MSYS2 的 MINGW64 shell 中：
 
@@ -77,7 +102,7 @@ export TARGET_ARCH=x86_64
 arm64 构建在 Windows 11 ARM64 的 MSYS2 `CLANGARM64` shell 中进行，设置
 `TARGET_ARCH=arm64` 后执行同样的命令。
 
-### Ubuntu 22.04
+#### Ubuntu 22.04
 
 ```bash
 sudo apt-get install -y build-essential cmake ninja-build pkg-config \
@@ -87,7 +112,7 @@ sudo apt-get install -y build-essential cmake ninja-build pkg-config \
 # 生成 build/ci-linux-x64/GetOrganelle-Linux-x64-*.tar.gz
 ```
 
-### macOS（Apple Silicon）
+#### macOS（Apple Silicon）
 
 ```bash
 brew install cmake ninja bzip2 libomp isa-l libdeflate pkg-config
@@ -99,7 +124,7 @@ brew install cmake ninja bzip2 libomp isa-l libdeflate pkg-config
 构建产物先写入 `stage/<platform>-<arch>/`，最终包会放到
 `GetOrganelle/GetOrganelleDep/Windows|linux|macOS/` 并按发行包布局打包。
 
-## CI/CD
+### CI/CD
 
 `.github/workflows/build.yml` 定义：
 
@@ -110,7 +135,7 @@ brew install cmake ninja bzip2 libomp isa-l libdeflate pkg-config
 > arm64 任务使用 GitHub 托管的 `windows-11-arm` 运行器。公开仓库可免费使用；
 > 私有仓库请确认账户/计划是否包含 arm64 标准运行器，或配置自托管运行器。
 
-## 发行包使用
+### 发行包使用
 
 Windows：
 
@@ -129,7 +154,7 @@ Linux / macOS：
 4. `./run_get_organelle_reads.sh` 或 `./run_get_organelle_assembly.sh` 运行；
    GUI 用 `./GetOrganelleGUI.sh` 启动。
 
-### 桌面 GUI
+#### 桌面 GUI
 
 双击 `GetOrganelleGUI.bat` 启动 **GetOrganelle Workbench**（Inputs →
 Preprocess → Parameters → Run → Results）。它按 YR-MPE 的插件契约与 UI
@@ -159,7 +184,7 @@ GUI 可通过 `gui/settings.json` 作为 YRTools `polypyplug` 插入宿主标签
 
 详见 `packaging/README-Windows.md`。
 
-## 已知限制
+### 已知限制
 
 - Bowtie2 的 Windows 构建不支持 mmap / 共享内存，`--mm` 会被包装器移除。
 - `--time-limit` 在 Windows 上不生效。
@@ -174,7 +199,7 @@ GUI 可通过 `gui/settings.json` 作为 YRTools `polypyplug` 插入宿主标签
   runner 上构建，面向 macOS 15+ Apple Silicon，SPAdes 所需的 `libomp.dylib`
   已随包附带。
 
-## 许可证
+### 许可证
 
 - **GetOrganelle Workbench 原创代码**（GUI、CLI、测试、构建脚本、CI、文档）：
   **AGPL-3.0-only**，见 `LICENSE` 与 `NOTICE.md`
