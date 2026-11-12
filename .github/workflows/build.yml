@@ -123,6 +123,74 @@ jobs:
             build/ci-arm64/*.sha256
           if-no-files-found: error
 
+  build-linux:
+    name: Linux x86_64
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build pkg-config zlib1g-dev libbz2-dev \
+            libisal-dev libdeflate-dev perl curl zip
+
+      - name: Build dependencies
+        run: bash ./scripts/build_all.sh x86_64
+
+      - name: Smoke test
+        run: |
+          ./stage/linux-x64/samtools/bin/samtools --version
+          ./stage/linux-x64/bowtie2/bowtie2-align-s --version
+          ./stage/linux-x64/fastp/fastp --version
+          ./stage/linux-x64/ncbi-blast/blastn -version
+          ./stage/linux-x64/ncbi-blast/tblastn -version
+          ./stage/linux-x64/spades/bin/spades-core || true
+
+      - name: Package
+        run: bash ./scripts/package.sh x86_64 "${{ env.PKG_VERSION }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GetOrganelle-Linux-x64
+          path: |
+            build/ci-linux-x64/*.tar.gz
+            build/ci-linux-x64/*.sha256
+          if-no-files-found: error
+
+  build-macos:
+    name: macOS arm64
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: brew install cmake ninja bzip2 libomp isa-l libdeflate pkg-config
+
+      - name: Build dependencies
+        run: bash ./scripts/build_all.sh arm64
+
+      - name: Smoke test
+        run: |
+          ./stage/macos-arm64/samtools/bin/samtools --version
+          ./stage/macos-arm64/bowtie2/bowtie2-align-s --version
+          ./stage/macos-arm64/fastp/fastp --version
+          ./stage/macos-arm64/ncbi-blast/blastn -version
+          ./stage/macos-arm64/ncbi-blast/tblastn -version
+          ./stage/macos-arm64/spades/bin/spades-core || true
+
+      - name: Package
+        run: bash ./scripts/package.sh arm64 "${{ env.PKG_VERSION }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GetOrganelle-macOS-arm64
+          path: |
+            build/ci-macos-arm64/*.tar.gz
+            build/ci-macos-arm64/*.sha256
+          if-no-files-found: error
+
   gui-tests:
     name: GUI tests
     runs-on: windows-latest
@@ -155,7 +223,7 @@ jobs:
   release:
     name: Release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build-x64, build-arm64, gui-tests]
+    needs: [build-x64, build-arm64, build-linux, build-macos, gui-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

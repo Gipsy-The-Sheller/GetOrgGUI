@@ -11,9 +11,9 @@
 
 #include "io/reads/mpmc_bounded.hpp"
 #include "utils/parallel/openmp_wrapper.h"
+#include "utils/win32compat/sched_compat.hpp"
 
 #include <memory>
-#include <sched.h>
 
 #pragma GCC diagnostic push
 #ifdef __clang__
@@ -104,7 +104,7 @@ public:
                     read_ += 1;
 
                     while (!in_queue.enqueue(std::move(r)))
-                        sched_yield();
+                        spades::win32::sched_yield();
 
 #         pragma omp flush (stop)
                     if (stop)
@@ -174,7 +174,7 @@ public:
                     // the read once again.
                     if (!status)
                         while (!in_queue.enqueue(std::move(r)))
-                            sched_yield();
+                            spades::win32::sched_yield();
                 }
 
                 in_queue.close();
@@ -194,7 +194,7 @@ public:
                 auto res = op(std::move(r));
                 if (res)
                     while (!out_queue.enqueue(std::move(res)))
-                        sched_yield();
+                        spades::win32::sched_yield();
             }
         }
 

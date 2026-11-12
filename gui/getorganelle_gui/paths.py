@@ -1,4 +1,4 @@
-"""Locate GetOrganelle, its bundled Windows dependencies and user databases."""
+"""Locate GetOrganelle, its bundled dependencies and user databases."""
 from __future__ import annotations
 
 import importlib.util
@@ -19,6 +19,7 @@ from .models import (
 from .settings import Settings
 
 _CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
+_EXE = ".exe" if os.name == "nt" else ""
 
 
 def _capture(argv: List[str], cwd: Optional[str] = None, timeout: float = 10.0):
@@ -161,12 +162,12 @@ def probe_dependencies(settings: Settings, check_versions: bool = False) -> Depe
         detail="" if spades_ok else "Bundled SPAdes was not found",
     )
 
-    bowtie2 = dep_root / "bowtie2" / "bowtie2-align-s.exe"
+    bowtie2 = dep_root / "bowtie2" / f"bowtie2-align-s{_EXE}"
     if not bowtie2.is_file():
         bowtie2 = dep_root / "bowtie2" / "bowtie2"
     bowtie2_ok = bowtie2.is_file()
     bowtie2_version = ""
-    if check_versions and bowtie2.suffix.lower() == ".exe" and bowtie2_ok:
+    if check_versions and bowtie2_ok:
         returncode, output = _capture([str(bowtie2), "--version"], timeout=10.0)
         match = re.search(r"version\s+(\S+)", output)
         if match:
@@ -180,7 +181,9 @@ def probe_dependencies(settings: Settings, check_versions: bool = False) -> Depe
         detail="" if bowtie2_ok else "Bundled Bowtie2 was not found",
     )
 
-    blastn = dep_root / "ncbi-blast" / "blastn.exe"
+    blastn = dep_root / "ncbi-blast" / f"blastn{_EXE}"
+    if not blastn.is_file():
+        blastn = dep_root / "ncbi-blast" / "blastn"
     blast_ok = blastn.is_file()
     blast_version = ""
     if check_versions and blast_ok:
@@ -194,10 +197,12 @@ def probe_dependencies(settings: Settings, check_versions: bool = False) -> Depe
         path=str(blastn),
         version=blast_version,
         ok=blast_ok,
-        detail="" if blast_ok else "blastn.exe was not found",
+        detail="" if blast_ok else "blastn was not found",
     )
 
-    samtools = dep_root / "samtools" / "bin" / "samtools.exe"
+    samtools = dep_root / "samtools" / "bin" / f"samtools{_EXE}"
+    if not samtools.is_file():
+        samtools = dep_root / "samtools" / "bin" / "samtools"
     samtools_ok = samtools.is_file()
     samtools_version = ""
     if check_versions and samtools_ok:
@@ -233,7 +238,9 @@ def probe_dependencies(settings: Settings, check_versions: bool = False) -> Depe
         detail="" if python_ok else "Configured Python interpreter is missing",
     )
 
-    fastp = dep_root / "fastp" / "fastp.exe"
+    fastp = dep_root / "fastp" / f"fastp{_EXE}"
+    if not fastp.is_file():
+        fastp = dep_root / "fastp" / "fastp"
     fastp_ok = fastp.is_file()
     fastp_version = ""
     if check_versions and fastp_ok:

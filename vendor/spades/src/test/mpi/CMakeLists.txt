@@ -6,8 +6,10 @@
 
 project(mpi_test CXX)
 
-set(MPI_DETERMINE_LIBRARY_VERSION TRUE)
-find_package(MPI)
+if (SPADES_TOOL_HPCSPADES_BUILD)
+  set(MPI_DETERMINE_LIBRARY_VERSION TRUE)
+  find_package(MPI)
+endif()
 if (MPI_FOUND AND SPADES_TOOL_HPCSPADES_BUILD)
   # Determine MPI vendor and MPI runtime version
   # configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/MPIVendorName.c.in"

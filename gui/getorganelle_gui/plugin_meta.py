@@ -49,7 +49,7 @@ def plugin_info() -> dict:
         "gui_version": __version__,
         "description": (
             "Assemble organelle genomes from genome-skimming reads or an existing "
-            "assembly graph using the native Windows GetOrganelle toolchain."
+            "assembly graph using the native GetOrganelle toolchain."
         ),
         "input_types": {
             "Paired FASTQ": ["fq", "fastq", "fq.gz", "fastq.gz", "tar.gz"],
@@ -154,7 +154,7 @@ def control_bindings() -> List[dict]:
         {"id": "config_dir", "widget": "settings.config_dir", "label": "GetOrganelle config folder", "kind": "path",
          "cli": ["--config-dir", "{value}"], "notes": "Set in Settings."},
         {"id": "extra_args", "widget": "extra_edit", "label": "Extra options", "kind": "text",
-         "cli": ["{value}"], "notes": "Split Windows-friendly; protected flags are rejected."},
+         "cli": ["{value}"], "notes": "Split shell-style; protected flags are rejected."},
         {"id": "preprocess", "widget": "enable_check", "label": "fastp preprocessing", "kind": "bool",
          "cli": ["--preprocess"], "notes": "Runs fastp before GetOrganelle; reads mode only."},
         {"id": "adapter_mode", "widget": "adapter_combo", "label": "Adapter handling", "kind": "choice",

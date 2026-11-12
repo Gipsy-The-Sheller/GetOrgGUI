@@ -21,6 +21,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
 from collections import defaultdict
@@ -801,7 +802,8 @@ def resolve_blast_tools(settings=None) -> Dict[str, str]:
     if dep_root:
         folders.append(Path(dep_root) / "ncbi-blast")
     repository = Path(__file__).resolve().parents[2]
-    folders.append(repository / "GetOrganelle" / "GetOrganelleDep" / "Windows" / "ncbi-blast")
+    dep_platform = "Windows" if os.name == "nt" else ("macOS" if sys.platform == "darwin" else "linux")
+    folders.append(repository / "GetOrganelle" / "GetOrganelleDep" / dep_platform / "ncbi-blast")
     names = ("blastn", "tblastn", "makeblastdb")
     tools: Dict[str, str] = {}
     missing: List[str] = []

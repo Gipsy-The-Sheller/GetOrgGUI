@@ -14,13 +14,13 @@
 #include "kmer_index/kmer_mph/kmer_index.hpp"
 #include "kmer_index/kmer_mph/kmer_index_traits.hpp"
 #include "utils/logger/logger.hpp"
+#include "utils/win32compat/sched_compat.hpp"
 
 #include "hkmer.hpp"
 
 #include <vector>
 
 #include <cstdlib>
-#include <sched.h>
 
 namespace hammer {
 
@@ -36,7 +36,7 @@ struct KMerStat {
       : count(count), kmer(kmer), qual(qual), lock_(0) {}
 
   void lock() {
-    while (__sync_val_compare_and_swap(&lock_, 0, 1) == 1) sched_yield();
+    while (__sync_val_compare_and_swap(&lock_, 0, 1) == 1) spades::win32::sched_yield();
   }
   void unlock() {
     lock_ = 0;

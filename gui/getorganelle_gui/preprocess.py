@@ -6,6 +6,7 @@ command is then built with the trimmed paths instead of the raw reads.
 """
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List
@@ -41,7 +42,8 @@ class PreprocessPlan:
 
 
 def fastp_path(settings: Settings) -> Path:
-    return Path(settings.dep_root) / "fastp" / "fastp.exe"
+    suffix = ".exe" if os.name == "nt" else ""
+    return Path(settings.dep_root) / "fastp" / f"fastp{suffix}"
 
 
 def _common_fastp_args(config: RunConfig) -> List[str]:

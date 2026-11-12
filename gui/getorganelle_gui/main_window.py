@@ -235,7 +235,7 @@ class MainWindow(QMainWindow):
         title_box.setSpacing(0)
         title = QLabel(APP_NAME)
         title.setObjectName("CardTitle")
-        subtitle = QLabel("Native Windows organelle assembly")
+        subtitle = QLabel("Native organelle assembly")
         subtitle.setObjectName("Caption")
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
@@ -605,7 +605,7 @@ class MainWindow(QMainWindow):
             self,
             f"About {APP_NAME}",
             f"<h3>{APP_NAME} {__version__}</h3>"
-            "<p>A YR-MPE-style workbench for the native Windows build of GetOrganelle.</p>"
+            "<p>A YR-MPE-style workbench for the native desktop build of GetOrganelle.</p>"
             f"<p>GetOrganelle {self.deps.getorganelle_version or '—'}<br>"
             "SPAdes, Bowtie2 and BLAST+ are bundled under GetOrganelleDep.</p>"
             '<p>GetOrganelle: Jin et al. 2020, <i>Genome Biology</i> 21:241. '

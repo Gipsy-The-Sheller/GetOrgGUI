@@ -502,7 +502,7 @@ def _check_preprocess(
                 ValidationIssue(
                     "error",
                     "preprocess",
-                    "fastp is not available in GetOrganelleDep/Windows/fastp.",
+                    "fastp is not available in the bundled dependencies.",
                     "Rebuild the package with fastp, or disable preprocessing.",
                 )
             )

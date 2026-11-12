@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import (
 
 from .models import ORGANELLES
 from .paths import probe_dependencies
-from .settings import Settings
+from .settings import Settings, dependency_platform_name
 from .widgets import Badge, FileInput
 from .pages.common import caption, hint
 
@@ -100,7 +100,10 @@ class SettingsDialog(QDialog):
         form.setSpacing(12)
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         self.getorg_input = FileInput(mode="directory", placeholder="Folder containing get_organelle_from_reads.py")
-        self.dep_input = FileInput(mode="directory", placeholder="GetOrganelleDep/Windows")
+        self.dep_input = FileInput(
+            mode="directory",
+            placeholder=f"GetOrganelleDep/{dependency_platform_name()}",
+        )
         self.python_input = FileInput(filters=PYTHON_FILTER, placeholder="python.exe")
         self.workspace_input = FileInput(mode="directory", placeholder="Folder for runs")
         self.config_input = FileInput(mode="directory", placeholder="Optional: custom GetOrganelle config folder")

@@ -18,8 +18,17 @@ from typing import List
 APP_DIR_NAME = "GetOrganelleWorkbench"
 
 
+def dependency_platform_name() -> str:
+    """Return the GetOrganelleDep subdirectory for this platform."""
+    if sys.platform.startswith("win"):
+        return "Windows"
+    if sys.platform == "darwin":
+        return "macOS"
+    return "linux"
+
+
 def repository_root() -> Path:
-    """Return the GetOrganelle Windows repository/package root."""
+    """Return the GetOrganelle repository/package root."""
     return Path(__file__).resolve().parents[2]
 
 
@@ -77,7 +86,7 @@ class Settings:
             self.getorganelle_root = str(root / "GetOrganelle")
         if not self.dep_root:
             self.dep_root = str(
-                Path(self.getorganelle_root) / "GetOrganelleDep" / "Windows"
+                Path(self.getorganelle_root) / "GetOrganelleDep" / dependency_platform_name()
             )
         if not self.python_executable:
             self.python_executable = default_python()
