@@ -151,7 +151,7 @@ if [[ "$HOST_OS" == macos ]]; then
   relocate_macos_dylibs
   find "$DEPS" -type f -print0 | while IFS= read -r -d '' f; do
     if file -b "$f" | grep -q 'Mach-O'; then
-      codesign --force --sign - "$f" >/dev/null 2>&1 || true
+      codesign --force --sign - "$f" >/dev/null
     fi
   done
 fi
