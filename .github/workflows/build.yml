@@ -147,6 +147,9 @@ jobs:
           ./stage/linux-x64/ncbi-blast/blastn -version
           ./stage/linux-x64/ncbi-blast/tblastn -version
           ./stage/linux-x64/spades/bin/spades-core || true
+          mkdir -p build/smoke
+          cd build/smoke
+          python3 ../../stage/linux-x64/spades/bin/spades.py --test -t 2
 
       - name: Package
         run: bash ./scripts/package.sh x86_64 "${{ env.PKG_VERSION }}"
@@ -180,6 +183,9 @@ jobs:
           ./stage/macos-arm64/ncbi-blast/blastn -version
           ./stage/macos-arm64/ncbi-blast/tblastn -version
           ./stage/macos-arm64/spades/bin/spades-core || true
+          mkdir -p build/smoke
+          cd build/smoke
+          python3 ../../stage/macos-arm64/spades/bin/spades.py --test -t 2
 
       - name: Package
         run: bash ./scripts/package.sh arm64 "${{ env.PKG_VERSION }}"
