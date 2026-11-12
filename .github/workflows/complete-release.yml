@@ -1,0 +1,37 @@
+name: complete-release
+
+# One-off repair workflow: attach release archives that were omitted by an
+# older release job.  Kept manual-only with explicit run/tag inputs.
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Build run ID containing the artifacts
+        required: true
+      tag:
+        description: Existing release tag to upload to
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  upload:
+    name: Upload missing archives
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: GetOrganelle-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: Upload tar.gz assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ls -lh artifacts
+          gh release upload "${{ inputs.tag }}" artifacts/*.tar.gz --clobber
