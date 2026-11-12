@@ -135,7 +135,8 @@ brew install cmake ninja bzip2 libomp isa-l libdeflate pkg-config
 
 - 推送到 `main` / `master`、Pull Request、手动触发：构建 Windows x86_64、
   Windows arm64、Linux x86_64、Linux arm64、macOS arm64，并上传对应压缩包及 SHA256。
-- 推送 `v*` 标签：构建完成后自动创建 GitHub Release 并附带五个发行包。
+- 推送版本标签（如 `v0.2.0` 或 `0.2.0`）：构建完成后自动创建 GitHub
+  Release 并附带五个发行包。
 
 > arm64 任务使用 GitHub 托管的 `windows-11-arm` 运行器。公开仓库可免费使用；
 > 私有仓库请确认账户/计划是否包含 arm64 标准运行器，或配置自托管运行器。
