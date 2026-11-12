@@ -180,6 +180,7 @@ This package was built from GetOrgGUI commit \`${GIT_COMMIT}\` for
 | GetOrganelle | 1.8.0.1 | included under \`GetOrganelle/\`; upstream https://github.com/Kinggerm/GetOrganelle |
 | SPAdes | 4.3.0 | \`vendor/spades\`; upstream https://github.com/ablab/spades/tree/v4.3.0 |
 | Bowtie2 | 2.5.5 | \`vendor/bowtie2\`; upstream https://github.com/BenLangmead/bowtie2 |
+| SIMDe | Bowtie2 v2.5.5 submodule \`f6a0b3b\` | \`vendor/bowtie2/third_party/simde\`; upstream https://github.com/simd-everywhere/simde-no-tests |
 | fastp | 1.0.1 | \`vendor/fastp\`; upstream https://github.com/OpenGene/fastp |
 | samtools / htslib | 1.25 | \`vendor/samtools\`; upstream https://github.com/samtools/samtools |
 | NCBI BLAST+ | 2.17.0 | official ${BLAST_DESC} binary; https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.17.0/ |

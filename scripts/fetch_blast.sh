@@ -15,7 +15,9 @@ BLAST_VERSION="2.17.0"
 TOPDIR="ncbi-blast-${BLAST_VERSION}+"
 
 case "$HOST_OS/$TARGET_ARCH" in
-  windows/x86_64)
+  windows/x86_64|windows/aarch64)
+    # NCBI has no win_arm64 archive; Windows 11 ARM64 runs the x64 build
+    # through the built-in x64 emulation.
     BLAST_PLATFORM="x64-win64"
     BLAST_SHA256="ccde8788641e8f4137536aaadedfeac2f3599dbbc6166e701b5d89d19fa79038"
     ;;
