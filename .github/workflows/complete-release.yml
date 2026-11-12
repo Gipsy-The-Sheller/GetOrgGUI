@@ -32,6 +32,7 @@ jobs:
       - name: Upload tar.gz assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           ls -lh artifacts
-          gh release upload "${{ inputs.tag }}" artifacts/*.tar.gz --clobber
+          gh release upload "${{ inputs.tag }}" artifacts/GetOrganelle-*.tar.gz --clobber
