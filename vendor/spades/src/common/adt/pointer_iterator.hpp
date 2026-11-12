@@ -18,16 +18,16 @@
 namespace adt {
 
 template<typename T>
-class pointer_iterator : public std::iterator<std::random_access_iterator_tag, T> {
+class pointer_iterator {
 protected:
     T *data_;
 
 public:
     typedef std::random_access_iterator_tag iterator_category;
-    typedef typename std::iterator<std::random_access_iterator_tag, T>::value_type value_type;
-    typedef typename std::iterator<std::random_access_iterator_tag, T>::difference_type difference_type;
-    typedef typename std::iterator<std::random_access_iterator_tag, T>::reference reference;
-    typedef typename std::iterator<std::random_access_iterator_tag, T>::pointer pointer;
+    typedef T value_type;
+    typedef std::ptrdiff_t difference_type;
+    typedef T &reference;
+    typedef T *pointer;
 
     pointer_iterator() : data_(NULL) { }
 
