@@ -59,7 +59,10 @@ GetOrganelle 使用的依赖目录名（`Windows`、`linux`、`macOS`）。
   ("x86-64-v3")` 的 v256 变体；arm64 上关闭 POPCNT，macOS 上不传
   `-fopenmp-simd`（Apple Clang 不支持）。仓库内补齐 Bowtie2 v2.5.5 的
   `third_party/simde` 子模块（commit `f6a0b3b`），供 arm64 的 SSE 兼容层
-  使用。samtools 只构建 htslib 静态库。
+  使用；Bowtie2 的 `threadpool.h` 用 `decltype` 替代新版 libc++ 已移除的
+  `std::result_of`。源码快照中的 `configure`/`version.sh`/`bowtie2*`
+  等脚本丢失了可执行位，构建与打包时显式 `chmod +x`。samtools 只构建
+  htslib 静态库。
 - **BLAST+**：Linux x64 使用官方 `x64-linux`，macOS arm64 使用官方
   `aarch64-macosx`，SHA-256 在 `scripts/fetch_blast.sh` 中固定。
 - **发行包**：Linux/macOS 使用 `tar.gz`，Windows 使用 `zip`；macOS 打包时

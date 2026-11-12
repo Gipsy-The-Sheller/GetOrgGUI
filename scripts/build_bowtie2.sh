@@ -75,6 +75,9 @@ else
     bowtie2-inspect-s \
     bowtie2-inspect-l \
     "$PREFIX/"
+  # These three are Perl/shell entry points; the vendored snapshot lost
+  # their executable bits.
+  chmod +x "$PREFIX/bowtie2" "$PREFIX/bowtie2-build" "$PREFIX/bowtie2-inspect"
 fi
 
 if [[ -f LICENSE ]]; then

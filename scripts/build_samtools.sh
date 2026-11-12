@@ -18,6 +18,8 @@ PREFIX="$STAGE/samtools"
 log "Building htslib ($PLATFORM_LABEL $TARGET_ARCH) with $CC"
 rm -rf "$SRC" "$PREFIX"
 cp -a "$ROOT/vendor/samtools" "$SRC"
+# The vendored snapshot lost executable bits on its helper scripts.
+chmod +x "$HTS/configure" "$HTS/version.sh" "$SRC/configure" "$SRC/version.sh"
 cd "$HTS"
 
 CONFIGURE_ARGS=(

@@ -11,6 +11,7 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <utility>
 #include <vector>
 
 template<typename T>
@@ -91,9 +92,10 @@ public:
         }
 
 	template<typename Function, typename... Args>
-	std::future<typename std::result_of<Function(Args...)>::type>
+	std::future<decltype(std::declval<Function>()(std::declval<Args>()...))>
 	submit(Function &&f, Args&&... args) {
-		using result_type = typename std::result_of<Function(Args...)>::type;
+		using result_type =
+			decltype(std::declval<Function>()(std::declval<Args>()...));
 		auto task = std::make_shared<std::packaged_task<result_type()>>(std::bind(std::forward<Function>(f), std::forward<Args>(args)...));
 		std::future<result_type> res(task->get_future());
                 work_queue.push([task] { (*task)(); });
