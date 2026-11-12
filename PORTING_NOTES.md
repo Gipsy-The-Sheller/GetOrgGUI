@@ -74,6 +74,8 @@ GetOrganelle 在运行时按 `GetOrganelleLib/../GetOrganelleDep/Windows` 查找
   `_mm_malloc/_mm_free`，避免依赖未声明的 POSIX `posix_memalign`
 - `adt/pointer_iterator.hpp` 不再继承已废弃/移除的 `std::iterator`，
   直接声明迭代器所需的五个 typedef，兼容新版 libc++
+- lexy 在 Clang 下加入 `-Wno-pragma-clang-attribute`：MSYS2 libc++ 的
+  attribute pragma 会触发 `-Werror`，该警告与 lexy 代码本身无关
 
 Python 层（SPAdes 流水线）：
 - `spades_init.py` 识别 `spades-core.exe`（否则误判为开发目录）

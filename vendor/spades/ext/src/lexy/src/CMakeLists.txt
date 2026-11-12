@@ -187,6 +187,9 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     endif()
     # clang doesn't like operator precedence rules we're using for the DSL.
     target_compile_options(lexy_dev INTERFACE -Wno-shift-op-parentheses -Wno-parentheses-equality)
+    # MSYS2's libc++ pushes attributes that this Clang warns about inside lexy's
+    # standard-library shim; keep that harmless warning out of -Werror.
+    target_compile_options(lexy_dev INTERFACE -Wno-pragma-clang-attribute)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     target_compile_options(lexy_dev INTERFACE -pedantic-errors -Werror -Wall -Wextra -Wconversion -Wsign-conversion)
     # GCC doesn't like the operator precedence rules we're using for the DSL.
