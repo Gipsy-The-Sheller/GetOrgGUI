@@ -92,7 +92,11 @@ ifneq (,$(findstring $(ARCH), x86_64 amd64))
 else ifneq (,$(findstring $(ARCH), aarch64 arm64 s390x powerpc64 powerpc64le ppc64 ppc64le))
   BITS := 64
   SSE_FLAG :=
-  CXXFLAGS += -fopenmp-simd
+  # Apple Clang does not accept -fopenmp-simd; the pragma is still valid
+  # there and only produces an "unknown pragma" warning.
+  ifeq (,$(MACOS))
+    CXXFLAGS += -fopenmp-simd
+  endif
   CPPFLAGS += -Ithird_party
   POPCNT_CAPABILITY ?= 0
 endif
