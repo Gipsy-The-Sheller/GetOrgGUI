@@ -20,6 +20,7 @@
 #include <vector>
 
 #include <cstdlib>
+#include <sched.h>
 
 namespace hammer {
 

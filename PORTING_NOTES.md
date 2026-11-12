@@ -78,6 +78,9 @@ GetOrganelle 在运行时按 `GetOrganelleLib/../GetOrganelleDep/Windows` 查找
   attribute pragma 会触发 `-Werror`，该警告与 lexy 代码本身无关
 - 捆绑的 spoa 补齐 libc++ 不再间接包含的头文件：`alignment_engine.cpp` 增加
   `<cstdlib>`（`std::abs`），`graph.cpp` 增加 `<iterator>`（`std::inserter`）
+- CLANGARM64 的 winpthreads 不提供 `sched.h`/`sched_yield`：新增
+  `win32compat/sched.h`（`SwitchToThread`/`Sleep(0)`），并在 ionhammer
+  的 `kmer_data.hpp` 中显式包含
 
 Python 层（SPAdes 流水线）：
 - `spades_init.py` 识别 `spades-core.exe`（否则误判为开发目录）
