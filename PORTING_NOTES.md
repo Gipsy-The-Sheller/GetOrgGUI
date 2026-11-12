@@ -76,6 +76,8 @@ GetOrganelle 在运行时按 `GetOrganelleLib/../GetOrganelleDep/Windows` 查找
   直接声明迭代器所需的五个 typedef，兼容新版 libc++
 - lexy 在 Clang 下加入 `-Wno-pragma-clang-attribute`：MSYS2 libc++ 的
   attribute pragma 会触发 `-Werror`，该警告与 lexy 代码本身无关
+- 捆绑的 spoa 补齐 libc++ 不再间接包含的头文件：`alignment_engine.cpp` 增加
+  `<cstdlib>`（`std::abs`），`graph.cpp` 增加 `<iterator>`（`std::inserter`）
 
 Python 层（SPAdes 流水线）：
 - `spades_init.py` 识别 `spades-core.exe`（否则误判为开发目录）
