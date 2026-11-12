@@ -40,6 +40,9 @@ if [[ "$HOST_OS" == macos ]]; then
     "-DOpenMP_CXX_FLAGS=-Xpreprocessor -fopenmp"
     "-DOpenMP_CXX_LIB_NAMES=omp"
     "-DOpenMP_omp_LIBRARY=$LIBOMP_PREFIX/lib/libomp.dylib"
+    "-DCMAKE_C_FLAGS=-I$LIBOMP_PREFIX/include"
+    "-DCMAKE_CXX_FLAGS=-I$LIBOMP_PREFIX/include"
+    "-DCMAKE_EXE_LINKER_FLAGS=-L$LIBOMP_PREFIX/lib -lomp"
     "-DBZIP2_INCLUDE_DIR=$BZIP2_PREFIX/include"
     "-DBZIP2_LIBRARY_RELEASE=$BZIP2_LIB"
   )
