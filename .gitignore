@@ -18,3 +18,6 @@ __pycache__/
 # Local reference PDF and PowerShell test script
 /s13127-011-0056-0.pdf
 /run_getorg.ps1
+
+# Local manuscript (not part of the public repository)
+/manuscript/

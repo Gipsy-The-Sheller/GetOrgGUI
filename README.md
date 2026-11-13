@@ -206,7 +206,6 @@ See `packaging/README-Windows.md` for package details.
 - `packaging/README-Windows.md` — Windows package usage.
 - `PORTING_NOTES.md` — porting record, patches, and verification.
 - `case_study/arabidopsis_col0_SRR30886772/` — worked 5 Gb Col-0 example.
-- `manuscript/` — ODE Methods paper and LaTeX source.
 
 ## Known limitations
 
