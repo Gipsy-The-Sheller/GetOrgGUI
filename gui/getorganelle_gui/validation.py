@@ -5,6 +5,7 @@ be shown next to the offending control instead of a generic modal dialog.
 """
 from __future__ import annotations
 
+import math
 import os
 import re
 from pathlib import Path
@@ -506,6 +507,20 @@ def _check_preprocess(
                     "Rebuild the package with fastp, or disable preprocessing.",
                 )
             )
+    try:
+        gbase_limit = float(config.fastp_gbase_limit or 0.0)
+    except (TypeError, ValueError):
+        gbase_limit = -1.0
+    if (not math.isfinite(gbase_limit) or gbase_limit < 0
+            or gbase_limit != round(gbase_limit, 1)):
+        issues.append(
+            ValidationIssue(
+                "error",
+                "fastp_gbase_limit",
+                "Reads to request must be 0 or a non-negative number with one decimal place.",
+                "Use 0 for all reads, or a value such as 1.5 Gb.",
+            )
+        )
     mode = (config.adapter_mode or "auto").lower()
     if mode not in ADAPTER_MODES:
         issues.append(

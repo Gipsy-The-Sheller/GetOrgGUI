@@ -352,31 +352,31 @@ int Stats::getCycles() {
     return mCycles;
 }
 
-long Stats::getReads() {
+long long Stats::getReads() {
     if(!summarized)
         summarize();
     return mReads;
 }
 
-long Stats::getBases() {
+long long Stats::getBases() {
     if(!summarized)
         summarize();
     return mBases;
 }
 
-long Stats::getQ20() {
+long long Stats::getQ20() {
     if(!summarized)
         summarize();
     return mQ20Total;
 }
 
-long Stats::getQ30() {
+long long Stats::getQ30() {
     if(!summarized)
         summarize();
     return mQ30Total;
 }
 
-long Stats::getQ40() {
+long long Stats::getQ40() {
     if(!summarized)
         summarize();
     return mQ40Total;
@@ -386,7 +386,7 @@ long* Stats::getQualHist() {
     return mBaseQualHistogram;
 }
 
-long Stats::getGCNumber() {
+long long Stats::getGCNumber() {
     if(!summarized)
         summarize();
     return mBaseContents['G' & 0x07] + mBaseContents['C' & 0x07];

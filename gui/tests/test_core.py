@@ -164,6 +164,35 @@ class CommandTests(unittest.TestCase):
         self.assertIn("AGATCGGAAGAGC", argv)
         self.assertNotIn("--detect_adapter_for_pe", argv)
 
+    def test_preprocess_gbase_limit(self):
+        def record(name, length):
+            nl = chr(10)
+            return "@" + name + nl + ("A" * length) + nl + "+" + nl + ("I" * length) + nl
+
+        r1 = self.root / "R1.fq"
+        r2 = self.root / "R2.fq"
+        r1.write_text(record("r1", 100) + record("r1b", 100), encoding="utf-8")
+        r2.write_text(record("r2", 100) + record("r2b", 100), encoding="utf-8")
+        config = RunConfig(
+            mode=MODE_READS,
+            reads_1=str(r1),
+            reads_2=str(r2),
+            organelle="embplant_pt",
+            output_root=str(self.root / "runs"),
+            run_name="limit",
+            threads=4,
+            preprocess=True,
+            fastp_gbase_limit=0.1,  # 100,000,000 bases; 100 + 100 bp per pair
+        )
+        plan = build_preprocess_plan(config, self.settings, self.root / "pre")
+        argv = plan.commands[0].argv
+        self.assertIn("--reads_to_process", argv)
+        self.assertEqual(argv[argv.index("--reads_to_process") + 1], "500000")
+
+        config.fastp_gbase_limit = 0.0
+        plan = build_preprocess_plan(config, self.settings, self.root / "pre")
+        self.assertNotIn("--reads_to_process", plan.commands[0].argv)
+
     def test_fastp_summary_tolerates_invalid_command_json(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "fastp.json"

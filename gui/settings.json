@@ -1,6 +1,6 @@
 {
   "name": "GetOrganelle Workbench",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "GetOrganelle Windows port",
   "description": "Native Windows GetOrganelle assembly workbench with fastp preprocessing and an interactive assembly-graph/BLAST viewer.",
   "entry_point": "getorganelle_gui.yrtools_entry:GetOrganelleEntry",

@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
+    QDoubleSpinBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -90,6 +91,21 @@ class PreprocessPage(ScrollPage):
         form.addRow("Adapter R2", self.adapter_r2_edit)
         self.adapter_r2_row_label = form.labelForField(self.adapter_r2_edit)
         self._add_error(form, "adapter_sequence_r2")
+        self.gbase_spin = QDoubleSpinBox()
+        self.gbase_spin.setDecimals(1)
+        self.gbase_spin.setRange(0.0, 10000.0)
+        self.gbase_spin.setSingleStep(0.1)
+        self.gbase_spin.setSuffix(" Gb")
+        self.gbase_spin.setSpecialValueText("All reads")
+        self.gbase_spin.setToolTip(
+            "Approximate total bases from the primary R1/R2 (or single-end) input; "
+            "fastp stops after the first N reads/pairs. 0 = all reads. The read "
+            "count is estimated from the mean length of the first reads; unpaired "
+            "extra files are not capped."
+        )
+        self.gbase_spin.valueChanged.connect(self._changed)
+        form.addRow("Reads to request", self.gbase_spin)
+        self._add_error(form, "fastp_gbase_limit")
         self.min_length_spin = QSpinBox()
         self.min_length_spin.setRange(0, 10000)
         self.min_length_spin.setValue(15)
@@ -187,6 +203,7 @@ class PreprocessPage(ScrollPage):
             self.adapter_combo.setCurrentIndex(index)
         self.adapter_edit.setText(config.adapter_sequence)
         self.adapter_r2_edit.setText(config.adapter_sequence_r2)
+        self.gbase_spin.setValue(config.fastp_gbase_limit)
         self.min_length_spin.setValue(config.fastp_min_length)
         self.quality_spin.setValue(config.fastp_quality)
         self.unqualified_spin.setValue(config.fastp_unqualified_percent)
@@ -208,6 +225,7 @@ class PreprocessPage(ScrollPage):
         config.adapter_mode = self.adapter_combo.currentData() or "auto"
         config.adapter_sequence = self.adapter_edit.text().strip()
         config.adapter_sequence_r2 = self.adapter_r2_edit.text().strip()
+        config.fastp_gbase_limit = round(self.gbase_spin.value(), 1)
         config.fastp_min_length = self.min_length_spin.value()
         config.fastp_quality = self.quality_spin.value()
         config.fastp_unqualified_percent = self.unqualified_spin.value()

@@ -185,7 +185,7 @@ This package was built from GetOrgGUI commit \`${GIT_COMMIT}\` for
 
 | Component | Version | Source |
 | --- | --- | --- |
-| GetOrganelle Workbench (original code) | 0.2.0 | this repository (AGPL-3.0-only) |
+| GetOrganelle Workbench (original code) | 0.3.0 | this repository (AGPL-3.0-only) |
 | GetOrganelle | 1.8.0.1 | included under \`GetOrganelle/\`; upstream https://github.com/Kinggerm/GetOrganelle |
 | SPAdes | 4.3.0 | \`vendor/spades\`; upstream https://github.com/ablab/spades/tree/v4.3.0 |
 | Bowtie2 | 2.5.5 | \`vendor/bowtie2\`; upstream https://github.com/BenLangmead/bowtie2 |

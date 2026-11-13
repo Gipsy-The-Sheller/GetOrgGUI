@@ -29,7 +29,7 @@ if [[ "$HOST_OS" == windows ]]; then
   "$MAKE" -j"$JOBS" \
     SHELL="$SHELL_WIN" \
     CXX="$CXX" \
-    CXXFLAGS="-std=c++11 -pthread -g -O2 -I./src" \
+    CXXFLAGS="-std=c++11 -pthread -g -O2 -D_FILE_OFFSET_BITS=64 -I./src" \
     LIBS="-lisal -ldeflate -lpthread -ldbghelp -lws2_32 -lpsapi" \
     STATIC_FLAGS="-static -pthread" \
     static
@@ -48,7 +48,7 @@ elif [[ "$HOST_OS" == macos ]]; then
   fi
   "$MAKE" -j"$JOBS" \
     CXX="$CXX" \
-    CXXFLAGS="-std=c++11 -pthread -g -O2 -I./src" \
+    CXXFLAGS="-std=c++11 -pthread -g -O2 -D_FILE_OFFSET_BITS=64 -I./src" \
     LIBS="$LIBS" \
     fastp
   cp -a fastp "$PREFIX/"
@@ -68,7 +68,7 @@ else
   fi
   "$MAKE" -j"$JOBS" \
     CXX="$CXX" \
-    CXXFLAGS="-std=c++11 -pthread -g -O2 -I./src" \
+    CXXFLAGS="-std=c++11 -pthread -g -O2 -D_FILE_OFFSET_BITS=64 -I./src" \
     LIBS="-lisal -lpthread" \
     LD_FLAGS="$DEFLATE_LIB -lisal -lpthread -Wl,-rpath,'\$\$ORIGIN'" \
     fastp

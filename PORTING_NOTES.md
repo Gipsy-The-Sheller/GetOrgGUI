@@ -47,6 +47,11 @@ GetOrganelle 使用的依赖目录名（`Windows`、`linux`、`macOS`）。
   自带测试目录中的
   `find_package(MPI)` 只在启用 hpcSPAdes 时执行，避免无 MPI 或 MPI 安装损坏
   时配置失败。
+- fastp 的统计/报告计数器由 `long` 改为 64 位：Windows 的 `long` 是 32 位，
+  处理 >2 GB 数据时 `total_bases`、Q20/Q30 和平均长度会溢出为负数或错误值；
+  该修复同时覆盖 JSON 与 HTML 报告
+- fastp 的 MinGW 构建增加 `-D_FILE_OFFSET_BITS=64`；否则 32 位 `off_t`
+  会让 fastp 把大于 2 GB 的 FASTQ 误判为不存在（Windows 大文件支持）
 - **fastp**：上游 Windows 补丁中的 `unistd.h`、`cxxabi.h` 改名为
   `win_unistd.h`、`win_cxxabi.h`，避免在 POSIX 上遮蔽系统头文件；
   `Sleep(1)` 改为 `fastp_usleep()` 宏；`<windows.h>` 只在 Windows 引入。

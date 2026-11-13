@@ -7,7 +7,7 @@ generated release packages.
 
 | Component | Version | License | Location |
 | --- | --- | --- | --- |
-| GetOrganelle Workbench original code | 0.2.0 | AGPL-3.0-only | `LICENSE`, `NOTICE.md` |
+| GetOrganelle Workbench original code | 0.3.0 | AGPL-3.0-only | `LICENSE`, `NOTICE.md` |
 | GetOrganelle | 1.8.0.1 | GPLv3 | `GetOrganelle/LICENSE` |
 | SPAdes | 4.3.0 | GPLv2 | `vendor/spades/GPLv2.txt`, `vendor/spades/LICENSE` |
 | Bowtie2 | 2.5.5 | GPLv3 | `vendor/bowtie2/LICENSE` |

@@ -37,7 +37,8 @@ custom seed FASTA and gene FASTA and is not a downloadable database.
 1. **Inputs** — choose `Reads` or `Assembly graph`, add files, tick one or
    more organelle types, and confirm the run folder.
 2. **Preprocess** — optionally enable fastp for adapter auto-detection/custom
-   adapters, quality and length filtering. Trimmed reads and fastp JSON/HTML
+   adapters, quality and length filtering, and an approximate Gb read budget
+   for the primary reads. Trimmed reads and fastp JSON/HTML
    reports are written under `<workspace>/_workbench/preprocess/<run_id>/`.
 3. **Parameters** — keep Auto k-mers and the default rounds for a first run;
    open Advanced only when the data need it.
@@ -133,7 +134,7 @@ global fonts and theme.
 
 ## Citation
 
-- fastp: Chen et al. 2018, *Bioinformatics* 34:884–890, doi:10.1093/bioinformatics/btx659
+- fastp: Chen et al. 2018, *Bioinformatics* 34:i884–i890, doi:10.1093/bioinformatics/bty560
 - GetOrganelle: Jin et al. 2020, *Genome Biology* 21:241,
   doi:10.1186/s13059-020-02154-5
 - SPAdes: Prjibelski et al. 2020, *Current Protocols in Bioinformatics* 70:e102

@@ -23,7 +23,7 @@ void HtmlReporter::setInsertHist(atomic_long* insertHist, int insertSizePeak) {
     mInsertSizePeak = insertSizePeak;
 }
 
-void HtmlReporter::outputRow(ofstream& ofs, string key, long v) {
+void HtmlReporter::outputRow(ofstream& ofs, string key, long long v) {
     ofs << "<tr><td class='col1'>" + key + "</td><td class='col2'>" + to_string(v) + "</td></tr>\n";
 }
 
@@ -31,7 +31,7 @@ void HtmlReporter::outputRow(ofstream& ofs, string key, string v) {
     ofs << "<tr><td class='col1'>" + key + "</td><td class='col2'>" + v + "</td></tr>\n";
 }
 
-string HtmlReporter::formatNumber(long number) {
+string HtmlReporter::formatNumber(long long number) {
     double num = (double)number;
     string unit[6] = {"", "K", "M", "G", "T", "P"};
     int order = 0;
@@ -46,7 +46,7 @@ string HtmlReporter::formatNumber(long number) {
         return to_string(num) + " " + unit[order];
 }
 
-string HtmlReporter::getPercents(long numerator, long denominator) {
+string HtmlReporter::getPercents(long long numerator, long long denominator) {
     if(denominator == 0)
         return "0.0";
     else
@@ -54,51 +54,51 @@ string HtmlReporter::getPercents(long numerator, long denominator) {
 }
 
 void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2) {
-    long pre_total_reads = preStats1->getReads();
+    long long pre_total_reads = preStats1->getReads();
     if(preStats2)
         pre_total_reads += preStats2->getReads();
 
-    long pre_total_bases = preStats1->getBases();
+    long long pre_total_bases = preStats1->getBases();
     if(preStats2)
         pre_total_bases += preStats2->getBases();
 
-    long pre_q20_bases = preStats1->getQ20();
+    long long pre_q20_bases = preStats1->getQ20();
     if(preStats2)
         pre_q20_bases += preStats2->getQ20();
 
-    long pre_q30_bases = preStats1->getQ30();
+    long long pre_q30_bases = preStats1->getQ30();
     if(preStats2)
         pre_q30_bases += preStats2->getQ30();
 
-    long pre_q40_bases = preStats1->getQ40();
+    long long pre_q40_bases = preStats1->getQ40();
     if(preStats2)
         pre_q40_bases += preStats2->getQ40();
 
-    long pre_total_gc = preStats1->getGCNumber();
+    long long pre_total_gc = preStats1->getGCNumber();
     if(preStats2)
         pre_total_gc += preStats2->getGCNumber();
 
-    long post_total_reads = postStats1->getReads();
+    long long post_total_reads = postStats1->getReads();
     if(postStats2)
         post_total_reads += postStats2->getReads();
 
-    long post_total_bases = postStats1->getBases();
+    long long post_total_bases = postStats1->getBases();
     if(postStats2)
         post_total_bases += postStats2->getBases();
 
-    long post_q20_bases = postStats1->getQ20();
+    long long post_q20_bases = postStats1->getQ20();
     if(postStats2)
         post_q20_bases += postStats2->getQ20();
 
-    long post_q30_bases = postStats1->getQ30();
+    long long post_q30_bases = postStats1->getQ30();
     if(postStats2)
         post_q30_bases += postStats2->getQ30();
 
-    long post_q40_bases = postStats1->getQ40();
+    long long post_q40_bases = postStats1->getQ40();
     if(postStats2)
         post_q40_bases += postStats2->getQ40();
 
-    long post_total_gc = postStats1->getGCNumber();
+    long long post_total_gc = postStats1->getGCNumber();
     if(postStats2)
         post_total_gc += postStats2->getGCNumber();
 

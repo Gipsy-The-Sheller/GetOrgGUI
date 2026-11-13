@@ -17,12 +17,12 @@ public:
     Stats(Options* opt, bool isRead2 = false, int guessedCycles = 0, int bufferMargin = 1024);
     ~Stats();
     int getCycles();
-    long getReads();
-    long getBases();
-    long getQ20();
-    long getQ30();
-    long getQ40();
-    long getGCNumber();
+    long long getReads();
+    long long getBases();
+    long long getQ20();
+    long long getQ30();
+    long long getQ40();
+    long long getGCNumber();
     long* getQualHist();
     // by default the qualified qual score is Q20 ('5')
     void statRead(Read* r);
@@ -59,7 +59,7 @@ private:
 private:
     Options* mOptions;
     bool mIsRead2;
-    long mReads;
+    long long mReads;
     int mEvaluatedSeqLen;
     /* 
     why we use 8 here?
@@ -87,18 +87,18 @@ private:
 
     int mCycles;
     int mBufLen;
-    long mBases;
+    long long mBases;
     long mQ20Bases[8];
     long mQ30Bases[8];
     long mBaseContents[8];
-    long mQ20Total;
-    long mQ30Total;
-    long mQ40Total;
+    long long mQ20Total;
+    long long mQ30Total;
+    long long mQ40Total;
     bool summarized;
     long mKmerMax;
     long mKmerMin;
     int mKmerBufLen;
-    long mLengthSum;
+    long long mLengthSum;
 };
 
 #endif

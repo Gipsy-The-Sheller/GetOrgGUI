@@ -195,6 +195,7 @@ class RunConfig:
     fastp_quality: int = 15
     fastp_unqualified_percent: int = 40
     fastp_min_length: int = 15
+    fastp_gbase_limit: float = 0.0
     fastp_dedup: bool = False
     fastp_extra_args: str = ""
     fastp_threads: int = 0

@@ -21,8 +21,9 @@ Inputs → Preprocess → Parameters → Run → Results
   mitogenome remain paired for land-plant runs; `anonym` uses a custom seed
   and gene FASTA instead of a downloadable database.
 - **Preprocess** — optional fastp stage: adapter auto-detection/custom
-  sequences, quality and length filtering, optional front/tail trimming and
-  deduplication. Trimmed reads and fastp JSON/HTML reports live under
+  sequences, quality and length filtering, optional front/tail trimming,
+  deduplication, and an optional total-base budget for the primary reads
+  (0.1 Gb precision; 0 = all reads). Trimmed reads and fastp JSON/HTML reports live under
   `<workspace>/_workbench/preprocess/<run_id>/`; Results shows before→after
   read counts.
 - **Parameters** — 3–5 basic controls; everything else is behind

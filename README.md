@@ -135,7 +135,7 @@ brew install cmake ninja bzip2 libomp isa-l libdeflate pkg-config
 
 - 推送到 `main` / `master`、Pull Request、手动触发：构建 Windows x86_64、
   Windows arm64、Linux x86_64、Linux arm64、macOS arm64，并上传对应压缩包及 SHA256。
-- 推送版本标签（如 `v0.2.0` 或 `0.2.0`）：构建完成后自动创建 GitHub
+- 推送版本标签（如 `v0.3.0` 或 `0.3.0`）：构建完成后自动创建 GitHub
   Release 并附带五个发行包。
 
 > arm64 任务使用 GitHub 托管的 `windows-11-arm` 运行器。公开仓库可免费使用；
@@ -164,7 +164,8 @@ Linux / macOS：
 
 双击 `GetOrganelleGUI.bat` 启动 **GetOrganelle Workbench**（Inputs →
 Preprocess → Parameters → Run → Results）。它按 YR-MPE 的插件契约与 UI
-审计实现：多细胞器类型、可选 fastp 接头裁剪/过滤、参数 Basic/Advanced
+审计实现：多细胞器类型、可选 fastp 接头裁剪/过滤与按 Gb 限制主 reads
+数据量（0.1 Gb 精度），参数 Basic/Advanced
 分层、内联校验、非模态后台任务、Job Center、结果预览、`run.json` 溯源、
 数据库管理与浅/深色主题。GFA/FASTG 还可在内置的 Bandage 风格交互查看器中
 按节点长度/弯曲多段折线绘制，支持覆盖度着色、搜索、拖动、缩放与 PNG 导出。

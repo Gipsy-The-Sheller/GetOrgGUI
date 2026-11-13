@@ -23,10 +23,10 @@ public:
     void setInsertHist(atomic_long* insertHist, int insertSizePeak);
     void report(FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2 = NULL, Stats* postStats2 = NULL);
 
-    static void outputRow(ofstream& ofs, string key, long value);
+    static void outputRow(ofstream& ofs, string key, long long value);
     static void outputRow(ofstream& ofs, string key, string value);
-    static string formatNumber(long number);
-    static string getPercents(long numerator, long denominator);
+    static string formatNumber(long long number);
+    static string getPercents(long long numerator, long long denominator);
 private:
     const string getCurrentSystemTime();
     void printHeader(ofstream& ofs);

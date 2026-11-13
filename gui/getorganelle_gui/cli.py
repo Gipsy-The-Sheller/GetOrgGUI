@@ -103,6 +103,7 @@ def _config_from_args(args, settings: Settings) -> RunConfig:
         fastp_quality=args.fastp_quality,
         fastp_unqualified_percent=args.fastp_unqualified_percent,
         fastp_min_length=args.fastp_min_length,
+        fastp_gbase_limit=args.fastp_gbase,
         trim_front1=args.trim_front1,
         trim_tail1=args.trim_tail1,
         trim_front2=args.trim_front2,
@@ -371,6 +372,8 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--fastp-quality", type=int, default=15)
     run.add_argument("--fastp-unqualified-percent", type=int, default=40)
     run.add_argument("--fastp-min-length", type=int, default=15)
+    run.add_argument("--fastp-gbase", type=float, default=0.0,
+                     help="Approximate Gb of primary reads to process with fastp (0 = all).")
     run.add_argument("--trim-front1", type=int, default=0)
     run.add_argument("--trim-tail1", type=int, default=0)
     run.add_argument("--trim-front2", type=int, default=0)

@@ -6,10 +6,12 @@ command is then built with the trimmed paths instead of the raw reads.
 """
 from __future__ import annotations
 
+import gzip
+import math
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Tuple
 
 from .command import CommandPlan, display_command, split_extra_args
 from .models import MODE_READS, RunConfig
@@ -68,6 +70,70 @@ def _common_fastp_args(config: RunConfig) -> List[str]:
     return args
 
 
+_READ_LENGTH_CACHE: Dict[Tuple[str, int, int], float] = {}
+
+
+def estimate_fastq_read_length(path: str, max_reads: int = 500) -> float:
+    """Estimate the mean read length from the first records of a FASTQ file.
+
+    The estimate is deliberately cheap: the fastp cap is an approximate data
+    budget, not an exact base counter.  Missing or malformed files fall back
+    to 150 bp; normal validation reports those inputs separately.
+    """
+    try:
+        stat = os.stat(path)
+    except OSError:
+        return 150.0
+    key = (path, stat.st_mtime_ns, stat.st_size)
+    cached = _READ_LENGTH_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    opener = gzip.open if path.lower().endswith((".gz", ".gzip")) else open
+    lengths: List[int] = []
+    try:
+        with opener(path, "rt", encoding="utf-8", errors="replace") as handle:
+            while len(lengths) < max_reads:
+                if not handle.readline():
+                    break
+                sequence = handle.readline()
+                if not handle.readline():
+                    break
+                if not handle.readline():
+                    break
+                lengths.append(len(sequence.strip()))
+    except (OSError, EOFError):
+        pass
+    result = sum(lengths) / len(lengths) if lengths else 150.0
+    if result <= 0:
+        result = 150.0
+    _READ_LENGTH_CACHE[key] = result
+    return result
+
+
+def _gbase_limit_args(config: RunConfig, inputs: List[str]) -> List[str]:
+    """Translate a Gbase budget into fastp's read/pair counter.
+
+    In paired mode fastp counts pairs, so one unit contributes the mean R1
+    plus mean R2 length; in single-end mode it contributes one read.
+    """
+    try:
+        limit_gb = float(config.fastp_gbase_limit or 0.0)
+    except (TypeError, ValueError):
+        return []
+    if not math.isfinite(limit_gb) or limit_gb <= 0:
+        return []
+    limit_gb = min(limit_gb, 10000.0)
+    lengths = [estimate_fastq_read_length(path) for path in inputs]
+    bases_per_unit = sum(lengths) if len(inputs) == 2 else lengths[0]
+    if bases_per_unit <= 0:
+        return []
+    units = max(1, int(round(limit_gb * 1_000_000_000 / bases_per_unit)))
+    # fastp's --reads_to_process is a signed 32-bit integer.
+    units = min(units, 2_147_483_647)
+    return ["--reads_to_process", str(units)]
+
+
 def _adapter_args(config: RunConfig, paired: bool) -> List[str]:
     mode = (config.adapter_mode or "auto").lower()
     if mode == "none":
@@ -96,7 +162,13 @@ def build_preprocess_plan(
     threads = config.fastp_threads or config.threads
     extra = split_extra_args(config.fastp_extra_args)
 
-    def make_command(inputs: List[str], outputs: List[str], label: str, stem: str):
+    def make_command(
+        inputs: List[str],
+        outputs: List[str],
+        label: str,
+        stem: str,
+        apply_gbase_limit: bool = True,
+    ):
         args = [str(fastp)]
         if len(inputs) == 2:
             args.extend(["-i", inputs[0], "-I", inputs[1], "-o", outputs[0], "-O", outputs[1]])
@@ -105,6 +177,8 @@ def build_preprocess_plan(
         args.extend(["--thread", str(threads)])
         args.extend(_adapter_args(config, paired=len(inputs) == 2))
         args.extend(common)
+        if apply_gbase_limit:
+            args.extend(_gbase_limit_args(config, inputs))
         report_json = str(base_dir / f"{stem}.json")
         report_html = str(base_dir / f"{stem}.html")
         args.extend(
@@ -165,6 +239,7 @@ def build_preprocess_plan(
                 [out],
                 f"fastp: unpaired file {index}",
                 f"fastp_unpaired_{index}",
+                apply_gbase_limit=False,
             )
             trimmed.append(out)
         plan.unpaired = ",".join(trimmed)

@@ -3,6 +3,6 @@
 APP_NAME = "GetOrganelle Workbench"
 APP_ID = "getorganelle-workbench"
 PLUGIN_SOURCE = "getorganelle"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = ["APP_NAME", "APP_ID", "PLUGIN_SOURCE", "__version__"]

@@ -22,7 +22,8 @@ Inputs → Preprocess → Parameters → Run → Results
   animal_mt、other_pt），支持勾选安装、安装全部缺失、更新和删除；
   `anonym` 使用自定义 seed/gene FASTA，不需要可下载数据库。
 - **Preprocess（fastp）**：可选接头自动检测/自定义接头、质量与长度过滤、
-  `--dedup`、首尾裁剪；fastp 原始 JSON/HTML 报告与 trimmed reads 写入
+  `--dedup`、首尾裁剪，以及按 Gb 限制主 reads 数据量（0.1 Gb 精度，0 = 全部）；
+  fastp 原始 JSON/HTML 报告与 trimmed reads 写入
   `<workspace>/_workbench/preprocess/<run_id>/`。
 - **Parameters**：Basic 仅保留线程、轮数、k-mer、预设；其余在 Advanced。
 - **Run**：非模态后台任务、实时日志、阶段进度、单一 Cancel（Windows 下
