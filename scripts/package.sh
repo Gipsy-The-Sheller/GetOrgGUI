@@ -160,7 +160,7 @@ if [[ "$HOST_OS" == macos ]]; then
 fi
 
 # Corresponding-source manifest (GPL/AGPL compliance for this release).
-GIT_COMMIT="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
+GIT_COMMIT="${GITHUB_SHA:-$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)}"
 case "$HOST_OS" in
   windows) BLAST_DESC="x64-win64 (x64 emulation on Windows arm64)" ;;
   linux)
